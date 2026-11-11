@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>WebARポスターギャラリー</title>
+
+<!-- 文字（Noto Sans JP）を読み込みます。ネットにつながっていなくても、別の文字で表示されるだけで動きます -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+<!-- 3Dの部品（A-Frame 1.5.0）。このまま変えないでください -->
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+<!-- ============================================================
+     ★★★ ここが「設定エリア」です ★★★
+     生徒が書きかえるのは、基本的にこの四角の中だけ！
+     書きかえるときは「 ' ' 」や「 , 」を消さないように気をつけてね。
+     ============================================================ -->
+<script>
+/* ------------------------------------------------------------
+   (1) 展示会の名前（スタート画面に大きく出ます）
+   ------------------------------------------------------------ */
+const EXHIBITION_TITLE = '○○町 地域紹介ポスター展';
+const EXHIBITION_SUB   = '○○高校 デザイン授業 作品';
+
+/* ------------------------------------------------------------
+   (2) ポスター一覧
+   1まいぶんが { ... }, のまとまりです。ふやすときは、まとまりごとコピーして
+   うしろに貼りつけてください（最後にも , を忘れずに）。
+     image       … 画像ファイルの名前（images フォルダの中に入れる）
+     title       … ポスターのタイトル
+     author      … 制作した人の名前
+     description … 解説文（タップしたときのカードに出ます）
+   ※ 画像が見つからないときは、タイトル入りの「仮ポスター」が自動で出ます。
+   ※ 画像は A4たて（たて：よこ ＝ 1.41：1）で作ると、ぴったり入ります。
+   ------------------------------------------------------------ */
+const POSTERS = [
+  { image: 'images/poster1.jpg', title: '海と港のまち',   author: '1年A組 山田 花子', description: '朝の港に並ぶ漁船と、新鮮な魚が自慢のまちを紹介します。市場は早朝がおすすめです。' },
+  { image: 'images/poster2.jpg', title: '歴史の坂道',     author: '1年A組 佐藤 太郎', description: '石だたみの坂と古い蔵が残る通りを、イラストで表現しました。散歩にぴったりです。' },
+  { image: 'images/poster3.jpg', title: 'おいしい名物',   author: '1年B組 鈴木 美咲', description: '地元でとれた野菜とお米を使った名物料理を紹介します。お店めぐりのヒントにどうぞ。' },
+  { image: 'images/poster4.jpg', title: '夏まつり',       author: '1年B組 高橋 健',   description: 'まちじゅうが明るくなる夏まつり。おみこしと花火の楽しさを色でえがきました。' },
+  { image: 'images/poster5.jpg', title: '緑の山あるき',   author: '1年C組 田中 結衣', description: '登山道から見える景色と、季節の花をまとめました。春と秋が特におすすめです。' },
+  { image: 'images/poster6.jpg', title: 'まちの人びと',   author: '1年C組 伊藤 蓮',   description: 'あたたかい人たちが暮らすまちの魅力を、イラストと言葉で伝えます。' }
+];
+
+/* ------------------------------------------------------------
+   (3) ポスターを並べる「間隔の倍率」
+   1.0 = ふつう / 1.5 = ひろびろ / 0.8 = ぎゅっと
+   ------------------------------------------------------------ */
+const GAP = 1.0;
+
+/* ------------------------------------------------------------
+   (4) あるきモードの調整（iPhoneなど）
+   STEP_LENGTH    … 1歩で進む距離（メートル）。大きいほど1歩で遠くへ進む
+   STEP_THRESHOLD … 歩数をひろう「感度」。数字を小さくすると反応しやすく、
+                    大きくすると反応しにくくなる（歩いていないのに進むなら大きく）
+   ------------------------------------------------------------ */
+const STEP_LENGTH    = 0.9;
+const STEP_THRESHOLD = 0.9;
+
+/* ------------------------------------------------------------
+   (5) 空間にうかべる大きな3Dオブジェクト一覧（10個以上）
+     shape … 形：sphere(球) box(はこ) torus(ドーナツ) torusKnot(むすび目)
+                  icosahedron(20面体) octahedron(8面体) dodecahedron(12面体)
+                  tetrahedron(4面体) cone(円すい) cylinder(円ばしら)
+     size  … 大きさ（メートル）。0.6〜1.4 の間で決めてね
+     color … 色（#ff6fa5 のような色コード）
+     style … 見た目：glossy(つや) / wire(ワイヤー) / glass(半透明)
+   ※ 置く場所は、ポスターと重ならないように自動で決まります。
+   ------------------------------------------------------------ */
+const FLOATERS = [
+  { shape: 'sphere',       size: 1.2, color: '#ff6fa5', style: 'glossy' },
+  { shape: 'torus',        size: 1.0, color: '#6c8cff', style: 'wire'   },
+  { shape: 'icosahedron',  size: 1.3, color: '#7af0d0', style: 'glass'  },
+  { shape: 'box',          size: 0.9, color: '#ffd166', style: 'glossy' },
+  { shape: 'torusKnot',    size: 1.1, color: '#c084fc', style: 'glossy' },
+  { shape: 'octahedron',   size: 0.8, color: '#ffffff', style: 'wire'   },
+  { shape: 'dodecahedron', size: 1.4, color: '#ff9f6b', style: 'glass'  },
+  { shape: 'cone',         size: 1.0, color: '#4ade80', style: 'glossy' },
+  { shape: 'sphere',       size: 0.7, color: '#60a5fa', style: 'glass'  },
+  { shape: 'tetrahedron',  size: 0.9, color: '#f472b6', style: 'wire'   },
+  { shape: 'cylinder',     size: 0.8, color: '#fde047', style: 'glossy' },
+  { shape: 'torus',        size: 1.4, color: '#34d399', style: 'glass'  }
+];
+
+/* ------------------------------------------------------------
+   (6) ポスターの真上で回る「アイキャッチ」の形（ポスターの順番にくり返し使います）
+   ------------------------------------------------------------ */
+const EYECATCHES = ['torus', 'icosahedron', 'octahedron', 'torusKnot', 'dodecahedron', 'sphere'];
+
+/* ------------------------------------------------------------
+   (7) そのほか（ふつうは変えなくてOK）
+   STICK_SPEED   … スティックを いっぱいに倒したときの速さ（メートル／秒）
+   STUCK_SECONDS … ARが始まってから、スマホの位置が動かない時間がこの秒数つづくと知らせる
+   BUILD_NUMBER  … 公開するたびに書きかえると、新しい版か見分けやすい
+   ------------------------------------------------------------ */
+const STICK_SPEED   = 1.6;
+const STUCK_SECONDS = 7;
+const BUILD_NUMBER  = 'build 2026.11.11-01';
+/* ★★★ 設定エリアはここまで ★★★ */
+</script>
+
+<style>
+/* ===== 見た目（デザイン）の設定 ===== */
+:root{
+  --accent:#7c9cff;                 /* メインの色 */
+  --accent2:#ff7ab6;                /* ぐらでーしょんの相手の色 */
+  --glass:rgba(24,30,56,.46);       /* ガラス風の背景 */
+  --glass-line:rgba(255,255,255,.28);
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{
+  margin:0;width:100%;height:100%;overflow:hidden;background:#0b1020;color:#fff;
+  font-family:'Noto Sans JP','Hiragino Sans','Yu Gothic',sans-serif;
+  touch-action:none;-webkit-user-select:none;user-select:none;
+}
+/* 3Dの画面：カメラ映像の上に重ねる（背景は透明） */
+a-scene{position:fixed!important;inset:0;z-index:1;}
+a-scene .a-canvas{background:transparent!important;}
+/* A-Frame 標準の VR / AR ボタンは見せない */
+.a-enter-vr,.a-enter-ar,.a-enter-vr-button,.a-enter-ar-button{display:none!important;}
+/* カメラ映像（iPhoneなど用） */
+#camVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;display:none;background:#000;}
+/* 画面の上に重ねる部品すべての入れ物（ARのときもこの中身が表示される） */
+#ui{position:fixed;inset:0;z-index:10;pointer-events:none;}
+#ui .ui-part,#tapLayer{pointer-events:auto;}
+#tapLayer{position:absolute;inset:0;}
+
+/* ガラス風の板 */
+.glass{
+  background:var(--glass);border:1px solid var(--glass-line);
+  backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5);
+  border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.25);
+}
+/* スタート前は隠しておく部品 */
+.hud{display:none;}
+body.running .hud{display:flex;}
+.camonly{display:none;}
+body.mode-camera.running .camonly{display:flex;}
+
+/* 左上：いまのモードと理由（いつも表示） */
+#modeBadge{
+  position:absolute;z-index:55;top:calc(var(--safe-t) + 10px);left:10px;max-width:min(80vw,430px);
+  padding:9px 14px;display:flex;flex-direction:column;gap:2px;font-size:12px;line-height:1.5;
+}
+#modeName{font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;}
+#modeName::before{content:'';flex:none;width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;}
+#modeReason{opacity:.88;}
+
+/* 右上：歩数 */
+#stepChip{position:absolute;top:calc(var(--safe-t) + 10px);right:10px;padding:8px 14px;font-size:13px;font-weight:700;align-items:center;gap:6px;}
+
+/* 赤い帯（エラー）：タップするまで消えない */
+#errBar{
+  position:absolute;z-index:60;left:10px;right:10px;top:calc(var(--safe-t) + 78px);display:none;
+  background:rgba(220,38,38,.94);color:#fff;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.55;
+  white-space:pre-line;word-break:break-all;box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+#errBar.show{display:block;}
+
+/* ひとことメッセージ */
+#toast{
+  position:absolute;z-index:58;left:50%;top:calc(var(--safe-t) + 74px);transform:translate(-50%,-8px);
+  max-width:min(88vw,460px);padding:10px 16px;font-size:13px;line-height:1.55;text-align:center;
+  opacity:0;pointer-events:none!important;transition:opacity .3s,transform .3s;
+}
+#toast.show{opacity:1;transform:translate(-50%,0);}
+
+/* 左下：アナログスティック */
+#stick{
+  position:absolute;left:18px;bottom:calc(var(--safe-b) + 88px);width:120px;height:120px;border-radius:50%;
+  display:none;touch-action:none;
+  background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.22),rgba(24,30,56,.45));
+  border:1px solid var(--glass-line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+body.stick-on.running #stick{display:block;}
+#stickKnob{
+  position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 14px rgba(0,0,0,.4);
+}
+
+/* 右下：後退・再配置 */
+#rightBtns{position:absolute;right:14px;bottom:calc(var(--safe-b) + 88px);display:flex;flex-direction:column;gap:10px;align-items:flex-end;}
+.btn{
+  font:inherit;color:#fff;font-weight:700;font-size:14px;padding:12px 18px;border:1px solid var(--glass-line);
+  align-items:center;gap:8px;cursor:pointer;
+}
+.btn:active{transform:scale(.96);}
+#backBtn[aria-pressed="true"]{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;}
+
+/* 下：レイアウト切りかえ */
+#layoutBar{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 12px);
+  padding:6px;gap:4px;border-radius:22px;
+}
+#layoutBar button{
+  font:inherit;font-size:13px;font-weight:700;color:#fff;background:transparent;border:0;border-radius:16px;
+  padding:10px 14px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:background .25s;
+}
+#layoutBar button svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;}
+#layoutBar button.active{background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 14px rgba(124,156,255,.45);}
+
+/* ポスターをタップしたときのカード */
+#card{
+  position:absolute;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:16px;
+  background:rgba(8,10,24,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+#card.show{display:flex;animation:fadeIn .25s ease;}
+.card-inner{
+  width:100%;max-width:440px;max-height:calc(100% - 20px);overflow-y:auto;touch-action:pan-y;
+  padding:16px;border-radius:26px;background:rgba(255,255,255,.14);
+}
+#cardImg{width:100%;max-height:42vh;object-fit:contain;border-radius:14px;background:#fff;display:block;}
+.card-no{display:inline-block;margin:14px 0 6px;padding:3px 12px;border-radius:99px;font-size:12px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));}
+#cardTitle{margin:2px 0 2px;font-size:22px;font-weight:900;line-height:1.35;}
+#cardAuthor{margin:0 0 10px;font-size:13px;opacity:.85;}
+#cardDesc{margin:0 0 14px;font-size:14px;line-height:1.75;}
+#cardClose{width:100%;justify-content:center;background:rgba(255,255,255,.2);}
+
+/* スタート画面 */
+#start{
+  position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:70px 18px 24px;text-align:center;
+  background:
+    radial-gradient(circle at 20% 15%,rgba(124,156,255,.55),transparent 45%),
+    radial-gradient(circle at 85% 80%,rgba(255,122,182,.45),transparent 45%),
+    linear-gradient(160deg,#10162e,#1b1440);
+}
+#start.hide{display:none;}
+.start-card{width:100%;max-width:420px;padding:28px 22px;border-radius:28px;background:rgba(255,255,255,.12);}
+.start-tag{display:inline-block;font-size:11px;letter-spacing:.14em;padding:4px 12px;border-radius:99px;background:rgba(255,255,255,.16);}
+#startTitle{margin:14px 0 6px;font-size:26px;line-height:1.35;font-weight:900;}
+#startSub{margin:0 0 18px;font-size:14px;opacity:.85;}
+.start-list{margin:0 0 20px;padding:0;list-style:none;font-size:13px;line-height:1.7;text-align:left;opacity:.92;}
+.start-list li{padding-left:1.4em;position:relative;}
+.start-list li::before{content:'●';position:absolute;left:0;color:var(--accent2);font-size:10px;top:.25em;}
+#startBtn{
+  width:100%;font:inherit;font-size:17px;font-weight:900;color:#fff;border:0;border-radius:18px;padding:16px;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 28px rgba(124,156,255,.45);
+}
+#startBtn:disabled{opacity:.6;}
+#startBtn:active{transform:scale(.98);}
+.diag{margin-top:16px;font-size:11.5px;line-height:1.7;opacity:.8;max-width:420px;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+</style>
+
+<!-- A-Frame に「毎フレーム動かす係」を登録（アニメーション用）。中身は下のほうの <script> にあります -->
+<script>
+AFRAME.registerComponent('gallery-loop', {
+  tick: function (time, dt) { if (window.__galleryTick) window.__galleryTick(time, dt); }
+});
+</script>
+</head>
+
+<body>
+<!-- カメラ映像（iPhoneなど。ARでないときの背景になる） -->
+<video id="camVideo" playsinline muted autoplay></video>
+
+<!-- ===== 画面に重ねる部品（ボタン・カードなど）===== -->
+<div id="ui">
+  <div id="tapLayer"></div>
+
+  <!-- 左上：いまのモードと理由 -->
+  <div id="modeBadge" class="glass ui-part">
+    <div id="modeName">いまのモード：判定中…</div>
+    <div id="modeReason">理由：端末をしらべています</div>
+  </div>
+
+  <!-- 右上：歩数（カメラ＋ジャイロのときだけ） -->
+  <div id="stepChip" class="glass camonly ui-part">👣 <span id="stepCount">0</span> 歩</div>
+
+  <!-- 赤い帯（エラー） -->
+  <div id="errBar" class="ui-part" role="alert"></div>
+
+  <!-- ひとことメッセージ -->
+  <div id="toast" class="glass ui-part"></div>
+
+  <!-- 左下：アナログスティック -->
+  <div id="stick" class="ui-part"><div id="stickKnob"></div></div>
+
+  <!-- 右下：後退・再配置 -->
+  <div id="rightBtns">
+    <button id="backBtn" class="glass btn camonly ui-part" aria-pressed="false">⇩ 後退：OFF</button>
+    <button id="recenterBtn" class="glass btn hud ui-part">◎ 再配置</button>
+  </div>
+
+  <!-- 下：レイアウト切りかえ -->
+  <div id="layoutBar" class="glass hud ui-part">
+    <button data-layout="circle" class="active">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-dasharray="2 3.2"/><circle cx="12" cy="12" r="1.6"/></svg>サークル
+    </button>
+    <button data-layout="street">
+      <svg viewBox="0 0 24 24"><path d="M6 3v18M18 3v18M6 7h0M18 7h0M6 12h0M18 12h0M6 17h0M18 17h0" stroke-linecap="round"/></svg>ストリート
+    </button>
+    <button data-layout="grid">
+      <svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="4.5" height="6" rx="1"/><rect x="9.8" y="4" width="4.5" height="6" rx="1"/><rect x="16" y="4" width="4.5" height="6" rx="1"/><rect x="3.5" y="13" width="4.5" height="6" rx="1"/><rect x="9.8" y="13" width="4.5" height="6" rx="1"/><rect x="16" y="13" width="4.5" height="6" rx="1"/></svg>グリッド
+    </button>
+  </div>
+
+  <!-- ポスターをタップしたときのカード（日本語はここ＝HTMLで表示します） -->
+  <div id="card" class="ui-part">
+    <div class="card-inner glass">
+      <img id="cardImg" alt="ポスターの拡大画像">
+      <span class="card-no" id="cardNo">No.01</span>
+      <h2 id="cardTitle"></h2>
+      <p id="cardAuthor"></p>
+      <p id="cardDesc"></p>
+      <button id="cardClose" class="btn glass" style="display:flex">閉じる</button>
+    </div>
+  </div>
+
+  <!-- スタート画面 -->
+  <div id="start" class="ui-part">
+    <div class="start-card glass">
+      <span class="start-tag">WEB AR GALLERY</span>
+      <h1 id="startTitle"></h1>
+      <p id="startSub"></p>
+      <ul class="start-list">
+        <li>スマホを持って、空中にうかぶポスターを見て回ろう</li>
+        <li>はじめると「カメラ」と「動きセンサー」の許可を聞かれます。「許可」をえらんでね</li>
+        <li>まわりの人や物にぶつからないよう、歩きスマホには気をつけて！</li>
+      </ul>
+      <button id="startBtn">はじめる</button>
+    </div>
+    <div class="diag">
+      <div id="diagAR">AR判定：しらべています…</div>
+      <div id="diagBuild"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 3Dの世界 =====
+     壁や背景は作りません。カメラの映像の中に、ポスターと3Dオブジェクトだけがうかびます。 -->
+<a-scene id="scene" gallery-loop
+  vr-mode-ui="enabled: false"
+  loading-screen="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+  renderer="alpha: true; antialias: true"
+  background="transparent: true"
+  webxr="referenceSpaceType: local; requiredFeatures: local; optionalFeatures: dom-overlay; overlayElement: #ui">
+
+  <!-- リグ（＝自分の体）。歩くとこれが動きます。高さ1.4m＝目の高さ -->
+  <a-entity id="rig" position="0 1.4 0">
+    <a-entity id="cam" camera="fov: 70; near: 0.05; far: 100" position="0 0 0"></a-entity>
+  </a-entity>
+
+  <!-- あかり -->
+  <a-entity light="type: ambient; color: #ffffff; intensity: 0.9"></a-entity>
+  <a-entity light="type: directional; color: #ffffff; intensity: 0.9" position="1 4 2"></a-entity>
+
+  <!-- ギャラリー本体（ポスターと3Dオブジェクトは、プログラムがここに作ります） -->
+  <a-entity id="gallery"></a-entity>
+</a-scene>
+
+<script>
+/* ============================================================
+   ここから下は「しくみ」の部分です。ふつうは触らなくて大丈夫！
+   （読んでみたい人のために、日本語コメントをたくさん書いています）
+   ============================================================ */
+(function () {
+'use strict';
+
+/* ---------- 便利な小さい道具 ---------- */
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const nowS = () => performance.now() / 1000;                 // いま何秒か
+const wrapAngle = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
+// 同じ並びを何度でも作れる「かたよらない乱数」（切りかえても同じ場所に戻れるように）
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hslToHex(h, s, l) {          // 色の指定を #rrggbb に変える
+  s /= 100; l /= 100;
+  const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = (n) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))));
+  return '#' + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+function withTimeout(p, ms) {
+  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+}
+
+/* ---------- 画面の部品 ---------- */
+const sceneEl = $('#scene'), rigEl = $('#rig'), camEl = $('#cam'), galleryEl = $('#gallery');
+const videoEl = $('#camVideo'), uiEl = $('#ui');
+
+/* ---------- 大きさなどの決まりごと ---------- */
+const POSTER_W = 0.9, POSTER_H = 1.27;   // ポスターの大きさ（A4たての比率）
+const POSTER_Y = 1.5;                    // ポスターの中心の高さ
+const EYE_HEIGHT = 1.4;                  // 目の高さ
+const STUCK_EPSILON = 0.005;             // 「位置が動いた」と見なす最小の距離（5mm）
+const STEP_MIN_INTERVAL = 380;           // 1歩と1歩の最短の間（ミリ秒）
+
+/* ---------- いまの状態 ---------- */
+const state = {
+  started: false, running: false, mode: 'pending', arActive: false, wantAR: false,
+  layout: 'circle', backward: false, stickOn: false, stick: { x: 0, y: 0 },
+  steps: 0, appearAt: null, recenterAt: 0, watch: null, cardOpen: false, arResolve: null
+};
+const gyro = { has: false, alpha: 0, beta: 0, gamma: 0 };   // ジャイロの値
+const look = { yaw: 0, pitch: 0 };                          // 指ドラッグで見回すとき用
+const pendingMove = new THREE.Vector3();                     // これから進む予定の距離
+const lastHeading = new THREE.Vector3(0, 0, -1);             // 最後に分かった向き
+const _v = new THREE.Vector3(), _p = new THREE.Vector3();
+let camStream = null;
+
+/* ============================================================
+   1. 端末の判定
+   ※ iPhone かどうかは「機種名（ユーザーエージェント）」で判定します。
+     （requestPermission があるかどうかでは判定しない：新しいAndroidのChromeにもあるため）
+   ============================================================ */
+const ua = navigator.userAgent || '';
+const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS対策
+const isAndroid = /Android/i.test(ua);
+const isChrome = /Chrome\//.test(ua) && !/Edg\/|OPR\/|SamsungBrowser|CriOS/.test(ua);
+let arInfo = null;
+
+async function checkAR() {
+  if (isIOS) return { ok: false, short: 'iPhone / iPad', why: 'iPhone / iPad はブラウザのAR（WebXR）に対応していないため' };
+  if (!isAndroid) return { ok: false, short: 'Android以外', why: 'Android ではない端末（パソコンなど）のため' };
+  if (!isChrome) return { ok: false, short: 'Chrome以外', why: 'Chrome ではないブラウザのため' };
+  if (!navigator.xr) return { ok: false, short: 'WebXRなし', why: 'このブラウザにAR機能（WebXR）がないため' };
+  try {
+    const ok = await navigator.xr.isSessionSupported('immersive-ar');
+    return ok
+      ? { ok: true, short: 'Android の Chrome', why: 'Android の Chrome で、この端末がARに対応しているため。実際に歩くとポスターに近づけます' }
+      : { ok: false, short: 'ARCore非対応', why: 'この端末はAR（ARCore）に対応していないため' };
+  } catch (e) {
+    return { ok: false, short: 'AR判定エラー', why: 'ARが使えるか確認中にエラー（' + (e && e.name) + '）が出たため' };
+  }
+}
+
+function setBadge(name, reason) {
+  $('#modeName').textContent = 'いまのモード：' + name;
+  $('#modeReason').textContent = '理由：' + reason;
+}
+function renderDiag(r) {
+  $('#diagAR').textContent = 'AR判定：' + (r.ok ? '○ 対応（' + r.short + '）' : '× ARは使えません（' + r.short + '）→ カメラ＋ジャイロで動きます');
+  if (r.ok) setBadge('AR（本物のAR）', r.why);
+  else setBadge('カメラ＋ジャイロ（ARではない）', r.why + '。カメラ映像の上に表示し、スマホを動かして見回します');
+}
+
+/* ============================================================
+   2. メッセージ（ひとこと・赤い帯）
+   ============================================================ */
+let toastTimer = null;
+function showToast(msg, ms) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms || 5000);
+}
+function showError(title, err) {
+  let detail = '';
+  if (typeof err === 'string') detail = err;
+  else if (err) detail = (err.name || 'Error') + (err.message ? '：' + err.message : '');
+  const bar = $('#errBar');
+  bar.textContent = title + (detail ? '\n' + detail : '') + '\n（タップで閉じます）';
+  bar.classList.add('show');
+}
+$('#errBar').addEventListener('click', () => $('#errBar').classList.remove('show'));  // タップするまで消えない
+
+/* ============================================================
+   3. ポスターの画像（なければ仮ポスターを自動で作る）
+   ============================================================ */
+function loadImage(path) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error('画像が見つかりません: ' + path));
+    img.src = path;
+  });
+}
+// 画像を「白い台紙の中に、たて横比を保ったまま」はめこむ → データURLにする
+function fitImageToDataURL(img) {
+  const W = 800, H = 1131, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+  const s = Math.min(W / img.naturalWidth, H / img.naturalHeight);
+  const w = img.naturalWidth * s, h = img.naturalHeight * s;
+  g.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+  return c.toDataURL('image/jpeg', 0.9);       // パソコンで直接ひらいたときは、ここで例外が出ることがある
+}
+function fontsReady() {
+  if (!document.fonts || !document.fonts.load) return Promise.resolve();
+  return withTimeout(document.fonts.load('900 40px "Noto Sans JP"', 'あ'), 2500).catch(() => {});
+}
+function roundRectPath(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+function wrapLines(g, text, maxW) {            // 日本語は文字ごとに折りかえす
+  const lines = []; let cur = '';
+  for (const ch of String(text)) {
+    if (ch === '\n') { lines.push(cur); cur = ''; continue; }
+    const t = cur + ch;
+    if (g.measureText(t).width > maxW && cur) { lines.push(cur); cur = ch; } else cur = t;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+function makePlaceholderDataURL(i, title, author) {
+  const W = 800, H = 1131, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const hue = (i * 52 + 210) % 360;
+  const grad = g.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, 'hsl(' + hue + ',78%,62%)');
+  grad.addColorStop(1, 'hsl(' + ((hue + 55) % 360) + ',82%,42%)');
+  g.fillStyle = grad; g.fillRect(0, 0, W, H);
+  g.globalAlpha = 0.18; g.fillStyle = '#fff';                       // かざりの丸
+  g.beginPath(); g.arc(W * 0.85, H * 0.12, 230, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.arc(W * 0.1, H * 0.9, 300, 0, Math.PI * 2); g.fill();
+  g.globalAlpha = 1;
+  g.fillStyle = 'rgba(255,255,255,.92)'; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  g.font = '900 150px "Noto Sans JP",sans-serif';
+  g.fillText(String(i + 1).padStart(2, '0'), 60, 210);               // 大きな番号
+  g.fillStyle = 'rgba(255,255,255,.93)'; roundRectPath(g, 50, 330, W - 100, 470, 36); g.fill();
+  g.fillStyle = '#1d2340'; g.textAlign = 'center';
+  let size = 96, lines = [];                                          // タイトルが入る大きさを探す
+  for (; size >= 44; size -= 6) {
+    g.font = '900 ' + size + 'px "Noto Sans JP",sans-serif';
+    lines = wrapLines(g, title || '', W - 190);
+    if (lines.length * size * 1.3 <= 400) break;
+  }
+  const blockH = lines.length * size * 1.3;
+  lines.forEach((ln, k) => g.fillText(ln, W / 2, 330 + (470 - blockH) / 2 + size * 1.02 + k * size * 1.3));
+  g.fillStyle = '#fff'; g.font = '700 40px "Noto Sans JP",sans-serif';
+  g.fillText('制作：' + (author || ''), W / 2, 920);
+  g.globalAlpha = 0.8; g.font = '400 26px "Noto Sans JP",sans-serif';
+  g.fillText('（仮ポスター：画像を入れるとここが入れかわります）', W / 2, 1040);
+  return c.toDataURL('image/png');
+}
+async function loadPosterTexture(i, d) {
+  if (d.image) {
+    try {
+      const img = await withTimeout(loadImage(d.image), 8000);
+      try { return { src: fitImageToDataURL(img) }; } catch (e) { return { src: d.image }; }
+    } catch (e) { /* 画像が無い → 仮ポスターへ */ }
+  }
+  await fontsReady();
+  return { src: makePlaceholderDataURL(i, d.title, d.author) };
+}
+
+/* ============================================================
+   4. 3Dオブジェクトの形と見た目
+   ============================================================ */
+function geometryFor(shape, s) {              // s = 全体の大きさ（メートル）
+  const r = s / 2;
+  switch (shape) {
+    case 'box':          return { primitive: 'box', width: s * 0.85, height: s * 0.85, depth: s * 0.85 };
+    case 'torus':        return { primitive: 'torus', radius: r * 0.72, radiusTubular: r * 0.28, segmentsRadial: 16, segmentsTubular: 40 };
+    case 'torusKnot':    return { primitive: 'torusKnot', radius: r * 0.65, radiusTubular: r * 0.2, segmentsRadial: 12, segmentsTubular: 80, p: 2, q: 3 };
+    case 'icosahedron':  return { primitive: 'icosahedron', radius: r };
+    case 'octahedron':   return { primitive: 'octahedron', radius: r };
+    case 'dodecahedron': return { primitive: 'dodecahedron', radius: r };
+    case 'tetrahedron':  return { primitive: 'tetrahedron', radius: r };
+    case 'cone':         return { primitive: 'cone', radiusBottom: r * 0.8, radiusTop: 0, height: s };
+    case 'cylinder':     return { primitive: 'cylinder', radius: r * 0.6, height: s * 0.9 };
+    default:             return { primitive: 'sphere', radius: r, segmentsWidth: 32, segmentsHeight: 24 };
+  }
+}
+function materialFor(style, color) {
+  if (style === 'wire')  return { shader: 'flat', color: color, wireframe: true };
+  if (style === 'glass') return { shader: 'standard', color: color, opacity: 0.45, transparent: true, metalness: 0.1, roughness: 0.05, side: 'double' };
+  return { shader: 'standard', color: color, metalness: 0.35, roughness: 0.18 };   // glossy（つや）
+}
+const mk = () => document.createElement('a-entity');
+
+/* ============================================================
+   5. ポスターと3Dオブジェクトを作る
+   ============================================================ */
+const units = [];      // ポスター（フレーム・画像・アイキャッチをまとめたもの）
+const floaters = [];   // 空間にうかぶ大きな3Dオブジェクト
+
+function createPosterUnit(i, data) {
+  const outer = mk();                 // 位置・向きが変わる（レイアウト切りかえ用）
+  const bob = mk();                   // ふわふわ上下する
+  const frame = mk(), plane = mk(), eyeHolder = mk(), eyeSpin = mk();
+
+  // 白いフレーム
+  frame.setAttribute('geometry', { primitive: 'box', width: POSTER_W + 0.12, height: POSTER_H + 0.12, depth: 0.05 });
+  frame.setAttribute('material', { shader: 'standard', color: '#ffffff', roughness: 0.6, metalness: 0 });
+  // ポスター画像（まず灰色。読みこめたら入れかえ）
+  plane.setAttribute('geometry', { primitive: 'plane', width: POSTER_W, height: POSTER_H });
+  plane.setAttribute('position', { x: 0, y: 0, z: 0.027 });
+  plane.setAttribute('material', { shader: 'flat', color: '#e8ebf5' });
+  // 真上でくるくる回るアイキャッチ
+  eyeHolder.setAttribute('position', { x: 0, y: POSTER_H / 2 + 0.6, z: 0 });
+  eyeSpin.setAttribute('geometry', geometryFor(EYECATCHES[i % EYECATCHES.length], 0.38));
+  eyeSpin.setAttribute('material', materialFor('glossy', hslToHex((i * 52 + 210) % 360, 85, 62)));
+
+  eyeHolder.appendChild(eyeSpin);
+  bob.appendChild(frame); bob.appendChild(plane); bob.appendChild(eyeHolder);
+  outer.appendChild(bob);
+  galleryEl.appendChild(outer);
+
+  const u = {
+    i: i, data: data, outer: outer, bob: bob, frame: frame, plane: plane, eyeSpin: eyeSpin,
+    cardSrc: '', phase: i * 1.7, delay: 0.15 * i,
+    cur: { x: 0, y: POSTER_Y, z: 0, yaw: 0 }, tg: { x: 0, y: POSTER_Y, z: 0, yaw: 0 }
+  };
+  loadPosterTexture(i, data).then((res) => {
+    // ★ 画像のデータURLは、文字列ではなく「オブジェクト形式」で渡す（セミコロンで壊れないように）
+    plane.setAttribute('material', { src: res.src, shader: 'flat' });
+    u.cardSrc = res.src;
+  });
+  return u;
+}
+
+function createFloater(i, f) {
+  const size = clamp(Number(f.size) || 1, 0.6, 1.4);     // 0.6〜1.4m におさめる
+  const outer = mk(), inner = mk();
+  inner.setAttribute('geometry', geometryFor(f.shape, size));
+  inner.setAttribute('material', materialFor(f.style, f.color || '#ffffff'));
+  outer.appendChild(inner);
+  galleryEl.appendChild(outer);
+  const rnd = mulberry32(100 + i * 31);
+  return {
+    i: i, size: size, outer: outer, inner: inner,
+    spin: 0.18 + rnd() * 0.3,           // ゆっくり回る速さ
+    bobAmp: 0.08 + rnd() * 0.1,         // 上下の大きさ
+    bobFreq: 0.5 + rnd() * 0.5,         // 上下の速さ
+    phase: rnd() * 6.28, delay: 0.5 + 0.12 * i,
+    cur: { x: 0, y: 2, z: 0 }, tg: { x: 0, y: 2, z: 0 }
+  };
+}
+
+/* ============================================================
+   6. 3つの展示レイアウト
+   ※ 座標は「自分が原点に立って、-Z（まっすぐ前）を向いている」ものとして決めます。
+   ============================================================ */
+function posterTargets(name) {
+  const n = POSTERS.length, t = [];
+  for (let i = 0; i < n; i++) {
+    if (name === 'circle') {
+      // サークル型：自分を中心に円状に囲む。半径＝max(2.5, 枚数×0.45)×GAP
+      const R = Math.max(2.5, n * 0.45) * GAP, a = (i / n) * Math.PI * 2;
+      const x = R * Math.sin(a), z = -R * Math.cos(a);
+      t.push({ x: x, y: POSTER_Y, z: z, yaw: Math.atan2(-x, -z) });          // 中心（自分）のほうを向く
+    } else if (name === 'street') {
+      // ストリート型：通路の両脇に向かい合う（通路の半分の幅1.7m、前後の間隔2.2m）
+      const half = 1.7 * GAP, pitch = 2.2 * GAP, side = (i % 2 === 0) ? -1 : 1, row = Math.floor(i / 2);
+      t.push({ x: side * half, y: POSTER_Y, z: -(row + 1) * pitch, yaw: side < 0 ? Math.PI / 2 - 0.2 : -Math.PI / 2 + 0.2 });
+    } else {
+      // グリッド型：3列の整列（横2.0m、縦2.6m）
+      const dx = 2.0 * GAP, dz = 2.6 * GAP, row = Math.floor(i / 3), col = i % 3;
+      const cnt = Math.min(3, n - row * 3);                                   // 最後の行は中央ぞろえ
+      t.push({ x: (col - (cnt - 1) / 2) * dx, y: POSTER_Y, z: -(row + 1) * dz, yaw: 0 });
+    }
+  }
+  return t;
+}
+
+// 3Dオブジェクトを、ポスターに重ならない場所へ置く（レイアウトごとに1回だけ計算）
+const floaterCache = {};
+function floaterTargets(name, pt) {
+  if (floaterCache[name]) return floaterCache[name];
+  const rng = mulberry32({ circle: 11, street: 23, grid: 37 }[name] || 5);
+  let minX = 0, maxX = 0, minZ = 0, maxZ = 0;
+  pt.forEach((p) => { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z); });
+  const margin = 3.4, placed = [], out = new Array(floaters.length);
+  const order = floaters.map((f, i) => i).sort((a, b) => floaters[b].size - floaters[a].size);   // 大きいものから置く
+  for (const idx of order) {
+    const r = floaters[idx].size / 2;
+    let pos = null;
+    for (let at = 0; at < 400 && !pos; at++) {
+      const sp = 1 + at / 160;                                    // 見つからなければ、探す範囲を広げる
+      const x = minX - margin * sp + rng() * ((maxX - minX) + 2 * margin * sp);
+      const z = minZ - margin * sp + rng() * ((maxZ - minZ) + 2 * margin * sp);
+      const y = (r + 0.6) + rng() * (3.4 - (r + 0.6));            // 床からうかせる
+      if (Math.hypot(x, z) < 1.7 + r) continue;                    // 自分のすぐそばには置かない
+      let ok = true;
+      for (const p of pt) { if (Math.hypot(x - p.x, z - p.z) < r + 1.0) { ok = false; break; } }   // ポスターと重ならない
+      if (!ok) continue;
+      if (name === 'street' && Math.abs(x) < 1.0 + r && z > minZ - 2) continue;                    // 通路はあけておく
+      for (const q of placed) { if (Math.hypot(x - q.x, y - q.y, z - q.z) < r + q.r + 0.4) { ok = false; break; } }
+      if (ok) pos = { x: x, y: y, z: z };
+    }
+    if (!pos) {                                                    // どうしても見つからないときは、遠くに置く
+      const a = idx * 2.4, far = Math.max(Math.abs(minX), Math.abs(maxX), Math.abs(minZ), Math.abs(maxZ)) + 3 + r;
+      pos = { x: Math.sin(a) * far, y: 1.5 + r, z: -Math.cos(a) * far };
+    }
+    placed.push({ x: pos.x, y: pos.y, z: pos.z, r: r });
+    out[idx] = pos;
+  }
+  floaterCache[name] = out;
+  return out;
+}
+
+function applyLayout(name, instant) {
+  state.layout = name;
+  const pt = posterTargets(name), ft = floaterTargets(name, pt);
+  units.forEach((u, i) => { u.tg = pt[i]; if (instant) u.cur = { x: pt[i].x, y: pt[i].y, z: pt[i].z, yaw: pt[i].yaw }; });
+  floaters.forEach((f, i) => { f.tg = ft[i]; if (instant) f.cur = { x: ft[i].x, y: ft[i].y, z: ft[i].z }; });
+  document.querySelectorAll('#layoutBar button').forEach((b) => b.classList.toggle('active', b.dataset.layout === name));
+}
+
+/* ============================================================
+   7. 毎フレームの動き（アニメーション・移動・向き）
+   ============================================================ */
+function easeOutBack(t) {                       // 「ぽんっ」と大きくなる動き
+  t = clamp(t, 0, 1);
+  const c1 = 1.70158, c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+// ジャイロの値 → カメラの向き（three.js の標準的な計算）
+const _zee = new THREE.Vector3(0, 0, 1), _euler = new THREE.Euler(), _q0 = new THREE.Quaternion();
+const _q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+const _devQ = new THREE.Quaternion(), _curQ = new THREE.Quaternion();
+function gyroToQuaternion(out, alpha, beta, gamma, orient) {
+  _euler.set(beta, alpha, -gamma, 'YXZ');
+  out.setFromEuler(_euler);
+  out.multiply(_q1);
+  out.multiply(_q0.setFromAxisAngle(_zee, -orient));
+}
+function screenAngleRad() {
+  const a = (screen.orientation && typeof screen.orientation.angle === 'number') ? screen.orientation.angle : (window.orientation || 0);
+  return a * Math.PI / 180;
+}
+
+function getHeading() {                          // いま向いている方向（水平ぶんだけ）
+  const cam = camEl.getObject3D('camera');
+  if (!cam) return lastHeading;
+  cam.updateWorldMatrix(true, false);
+  cam.getWorldDirection(_v);
+  _v.y = 0;
+  if (_v.lengthSq() < 0.04) return lastHeading;  // ほぼ真上・真下を向いているときは、前の向きを使う
+  _v.normalize(); lastHeading.copy(_v);
+  return lastHeading;
+}
+function getCameraWorldPos(target) {
+  const cam = camEl.getObject3D('camera');
+  if (!cam) return target.set(rigEl.object3D.position.x, EYE_HEIGHT, rigEl.object3D.position.z);
+  cam.updateWorldMatrix(true, false);
+  return cam.getWorldPosition(target);
+}
+
+// 「再配置」：いま立っている場所と向いている方向を、ギャラリーの正面にする
+function recenter() {
+  const h = getHeading().clone();
+  getCameraWorldPos(_p);
+  galleryEl.object3D.position.set(_p.x, 0, _p.z);
+  galleryEl.object3D.rotation.set(0, Math.atan2(-h.x, -h.z), 0);   // ギャラリーの前(-Z)を、いまの向きに合わせる
+}
+
+window.__galleryTick = function (timeMs, dtMs) {
+  if (!state.running) return;
+  const dt = Math.min(dtMs / 1000, 0.1), T = nowS();
+  const renderer = sceneEl.renderer;
+  const inXR = !!(renderer && renderer.xr && renderer.xr.isPresenting);
+
+  // (a) カメラの向き：AR以外のとき、ジャイロ（なければ指ドラッグ）で決める
+  if (!inXR && !state.arActive) {
+    if (gyro.has) {
+      gyroToQuaternion(_devQ, THREE.MathUtils.degToRad(gyro.alpha), THREE.MathUtils.degToRad(gyro.beta), THREE.MathUtils.degToRad(gyro.gamma), screenAngleRad());
+      _curQ.slerp(_devQ, 1 - Math.exp(-dt * 30));      // ぶるぶるを少しならす
+      camEl.object3D.quaternion.copy(_curQ);
+    } else {
+      _euler.set(look.pitch, look.yaw, 0, 'YXZ');
+      camEl.object3D.quaternion.setFromEuler(_euler);
+    }
+  }
+
+  // (b) 予約の再配置
+  if (state.recenterAt && T >= state.recenterAt) { state.recenterAt = 0; recenter(); }
+
+  // (c) 移動：スティック ＋ 歩数ぶん
+  const rp = rigEl.object3D.position;
+  const sm = Math.hypot(state.stick.x, state.stick.y);
+  if (state.stickOn && sm > 0) {
+    const f = getHeading(), spd = STICK_SPEED * Math.min(1, sm);     // 倒した量で速さが変わる
+    const fwd = state.stick.y / sm, rgt = state.stick.x / sm;        // 前後・左右の割合
+    rp.x += (f.x * fwd + (-f.z) * rgt) * spd * dt;
+    rp.z += (f.z * fwd + (f.x) * rgt) * spd * dt;
+  }
+  if (pendingMove.lengthSq() > 1e-6) {                               // 1歩ぶんを、なめらかに少しずつ進む
+    const k = 1 - Math.exp(-dt * 7);
+    rp.x += pendingMove.x * k; rp.z += pendingMove.z * k;
+    pendingMove.multiplyScalar(1 - k);
+  }
+
+  // (d) ポスターのアニメーション
+  const tt = state.appearAt == null ? -1 : T - state.appearAt;
+  const kk = 1 - Math.exp(-dt * 4);                                  // なめらかに近づく割合
+  for (const u of units) {
+    const c = u.cur, g = u.tg;
+    c.x += (g.x - c.x) * kk; c.y += (g.y - c.y) * kk; c.z += (g.z - c.z) * kk; c.yaw += wrapAngle(g.yaw - c.yaw) * kk;
+    u.outer.object3D.position.set(c.x, c.y, c.z);
+    u.outer.object3D.rotation.set(0, c.yaw, 0);
+    u.bob.object3D.position.y = Math.sin(T * 1.1 + u.phase) * 0.06;            // ふわふわ上下
+    u.bob.object3D.rotation.z = Math.sin(T * 0.8 + u.phase) * 0.012;
+    u.eyeSpin.object3D.rotation.y += dt * 1.0;                                  // アイキャッチが回る
+    u.outer.object3D.scale.setScalar(Math.max(0.001, easeOutBack((tt - u.delay) / 1.2)));   // 登場：小→大
+  }
+  // (e) 3Dオブジェクトのアニメーション
+  for (const f of floaters) {
+    const c = f.cur, g = f.tg;
+    c.x += (g.x - c.x) * kk; c.y += (g.y - c.y) * kk; c.z += (g.z - c.z) * kk;
+    f.outer.object3D.position.set(c.x, c.y, c.z);
+    f.inner.object3D.position.y = Math.sin(T * f.bobFreq + f.phase) * f.bobAmp;     // 上下
+    f.inner.object3D.rotation.y += dt * f.spin;                                      // ゆっくり回転
+    f.inner.object3D.rotation.x += dt * f.spin * 0.4;
+    f.inner.object3D.scale.setScalar(Math.max(0.001, easeOutBack((tt - f.delay) / 1.5)));  // 登場：小→大
+  }
+
+  // (f) AR中、スマホの位置が動かないかを見張る
+  const w = state.watch;
+  if (w && state.arActive) {
+    getCameraWorldPos(_p); _p.sub(rigEl.object3D.position);          // スティックで動かしたぶんは数えない
+    if (!w.base) {
+      if (T - w.t0 > 1.0) { w.base = _p.clone(); w.t1 = T; }          // AR開始から1秒後を基準にする
+    } else {
+      w.max = Math.max(w.max, _p.distanceTo(w.base));
+      if (w.max > STUCK_EPSILON) state.watch = null;                  // 動いた → 正常
+      else if (T - w.t1 >= STUCK_SECONDS) { state.watch = null; onStuck(); }
+    }
+  }
+};
+
+function onStuck() {
+  state.stickOn = true;
+  document.body.classList.add('stick-on');
+  setBadge('AR（位置が動かない状態）', 'ARは始まりましたが、' + STUCK_SECONDS + '秒間スマホの位置が全く動きません。左下のスティックで移動できます');
+  showToast('ARは始まりましたが、スマホの位置が動いていません。左下のスティックで進めます。', 8000);
+}
+
+/* ============================================================
+   8. センサー（ジャイロ・歩数）
+   ============================================================ */
+function requestSensorPermissions() {
+  // iPhone は「ユーザーがボタンを押した瞬間」に許可を聞く必要がある（機種名で判定）
+  const jobs = [];
+  if (isIOS) {
+    try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') jobs.push(DeviceOrientationEvent.requestPermission().catch(() => 'error')); } catch (e) {}
+    try { if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') jobs.push(DeviceMotionEvent.requestPermission().catch(() => 'error')); } catch (e) {}
+  }
+  return Promise.all(jobs).then((r) => (r.indexOf('denied') >= 0 ? 'denied' : 'ok'));
+}
+
+let sensorsOn = false;
+function startSensors() {
+  if (sensorsOn) return; sensorsOn = true;
+  window.addEventListener('deviceorientation', (e) => {
+    if (e.alpha == null && e.beta == null) return;
+    gyro.alpha = e.alpha || 0; gyro.beta = e.beta || 0; gyro.gamma = e.gamma || 0;
+    if (!gyro.has) { gyro.has = true; _curQ.copy(_devQ); }
+  });
+  window.addEventListener('devicemotion', onMotion);
+}
+
+// 歩数の検知：加速度から「重力のぶん」をひいて、ゆれの山を数える
+let gBase = 9.8, accSm = 0, lastStepMs = 0, stepArmed = true;
+function onMotion(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a || a.x == null) return;
+  const m = Math.hypot(a.x, a.y, a.z);
+  gBase += (m - gBase) * 0.05;                   // 重力ぶん（ゆっくり追いかける）
+  accSm += ((m - gBase) - accSm) * 0.35;         // ゆれをなめらかに
+  const now = performance.now();
+  if (stepArmed && accSm > STEP_THRESHOLD && now - lastStepMs > STEP_MIN_INTERVAL) {   // 感度＝STEP_THRESHOLD
+    stepArmed = false; lastStepMs = now; doStep();
+  } else if (!stepArmed && accSm < STEP_THRESHOLD * 0.35) stepArmed = true;
+}
+function doStep() {
+  if (!state.running || state.arActive) return;
+  const h = getHeading(), sign = state.backward ? -1 : 1;            // 向いている方向へ（後退ONなら反対へ）
+  pendingMove.x += h.x * STEP_LENGTH * sign;
+  pendingMove.z += h.z * STEP_LENGTH * sign;
+  state.steps++; $('#stepCount').textContent = state.steps;
+}
+
+/* ============================================================
+   9. AR（WebXR）の開始
+   ============================================================ */
+let xrPatched = false;
+function patchXR() {
+  if (xrPatched || !navigator.xr) return; xrPatched = true;
+  const orig = navigator.xr.requestSession.bind(navigator.xr);
+  // A-Frame の enterAR() は失敗しても何も言わず止まることがある。
+  // そこで requestSession を包んで、失敗をここで捕まえる。
+  navigator.xr.requestSession = function (mode, init) {
+    init = init || {};
+    if (mode === 'immersive-ar') {
+      init.requiredFeatures = ['local'];                                           // local で開始
+      const opt = (init.optionalFeatures || []).filter((f) => f !== 'local-floor');
+      if (opt.indexOf('dom-overlay') < 0) opt.push('dom-overlay');                 // 画面の上に #ui を重ねる
+      init.optionalFeatures = opt;
+      init.domOverlay = { root: uiEl };
+    }
+    return orig(mode, init).then(
+      (s) => s,
+      (err) => { onARFailed('ARを始められませんでした', err); throw err; }
+    );
+  };
+}
+function onARFailed(title, err) {
+  showError(title, err);
+  if (state.arResolve) { const r = state.arResolve; state.arResolve = null; r(false); }
+}
+function tryEnterAR() {
+  return new Promise((resolve) => {
+    state.arResolve = resolve; state.wantAR = true;
+    patchXR();
+    // 25秒たっても返事がなければ「失敗」とみなす（許可の確認中は待つので長め）
+    const timer = setTimeout(() => onARFailed('ARが25秒たっても始まりませんでした', { name: 'Timeout', message: '応答なし' }), 25000);
+    const done = resolve;
+    state.arResolve = (v) => { clearTimeout(timer); done(v); };
+    try {
+      const p = sceneEl.enterAR();
+      if (p && typeof p.catch === 'function') p.catch((err) => onARFailed('ARを始められませんでした', err));
+    } catch (err) { onARFailed('ARを始められませんでした', err); }
+  });
+}
+
+sceneEl.addEventListener('enter-vr', () => {
+  if (state.wantAR && (sceneEl.is('ar-mode') || (sceneEl.renderer && sceneEl.renderer.xr.isPresenting))) onARStarted();
+});
+sceneEl.addEventListener('exit-vr', () => {
+  if (!state.arActive) return;
+  state.arActive = false; state.running = false; state.wantAR = false;
+  document.body.classList.remove('running', 'stick-on');
+  $('#start').classList.remove('hide');
+  state.started = false;
+  $('#startBtn').disabled = false; $('#startBtn').textContent = 'もういちどはじめる';
+  showToast('ARを終了しました');
+});
+
+function applyARHeight() {                                  // AR開始後：カメラ位置を0に、リグの高さを1.4mに
+  camEl.setAttribute('position', '0 0 0');
+  camEl.object3D.position.set(0, 0, 0);
+  rigEl.object3D.position.y = EYE_HEIGHT;
+}
+function onARStarted() {
+  if (state.arActive) return;
+  state.arActive = true; state.mode = 'ar';
+  stopCamera(); videoEl.style.display = 'none';
+  camEl.object3D.quaternion.identity();
+  applyARHeight(); setTimeout(applyARHeight, 400); setTimeout(applyARHeight, 1500);
+  $('#start').classList.add('hide');
+  document.body.classList.add('running'); document.body.classList.remove('mode-camera');
+  state.stickOn = false; document.body.classList.remove('stick-on');
+  setBadge('AR（本物のAR）', (arInfo && arInfo.why) || 'ARで動いています');
+  state.running = true; state.appearAt = nowS();
+  state.recenterAt = nowS() + 0.8;                          // 開始直後に1回、自動で再配置
+  state.watch = { t0: nowS(), base: null, max: 0, t1: 0 };  // 動かないか見張りはじめる
+  if (state.arResolve) { const r = state.arResolve; state.arResolve = null; r(true); }
+  showToast('ARが始まりました。歩いてポスターに近づいてみよう！', 5000);
+}
+
+/* ============================================================
+   10. カメラ映像＋ジャイロのモード（iPhoneなど）
+   ============================================================ */
+function stopCamera() {
+  if (camStream) { camStream.getTracks().forEach((t) => t.stop()); camStream = null; }
+}
+async function startCameraMode(permP, reason) {
+  state.mode = 'camera';
+  setBadge('カメラ＋ジャイロ（ARではない）', reason + '。スマホを動かして見回せます');
+  $('#start').classList.add('hide');
+  document.body.classList.add('running', 'mode-camera');
+
+  const perm = await permP;                                  // センサーの許可を待つ
+  if (perm === 'denied') showToast('動きセンサーが許可されていません。画面をドラッグして見回してください（設定アプリ→Safari で許可できます）', 8000);
+  startSensors();
+
+  try {                                                      // カメラ映像を背景にする
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    videoEl.srcObject = camStream; videoEl.style.display = 'block';
+    await videoEl.play().catch(() => {});
+  } catch (e) {
+    showError('カメラを使えませんでした', e);
+  }
+
+  rigEl.object3D.position.y = EYE_HEIGHT;
+  camEl.object3D.position.set(0, 0, 0);
+  state.stickOn = true; document.body.classList.add('stick-on');
+  state.running = true; state.appearAt = nowS();
+  state.recenterAt = nowS() + 0.5;                           // 開始直後に1回、自動で再配置
+  showToast('歩くと進みます。左下のスティックでも動けます。ポスターをタップすると詳しく見られます。', 7000);
+
+  setTimeout(() => {                                         // ジャイロが動いているか確認
+    if (!gyro.has) setBadge('カメラ＋ドラッグ（ジャイロなし）', 'この端末ではジャイロの値が届いていないため。画面を指でドラッグして見回してください');
+  }, 2500);
+}
+
+/* ============================================================
+   11. タップ判定（自前のレイキャスト）／ドラッグで見回し
+   ============================================================ */
+const raycaster = new THREE.Raycaster();
+function handleTap(x, y) {
+  if (!state.running || state.cardOpen) return;
+  const ndc = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+  const renderer = sceneEl.renderer;
+  const cam = (renderer && renderer.xr && renderer.xr.isPresenting) ? renderer.xr.getCamera() : sceneEl.camera;
+  if (!cam) return;
+  raycaster.setFromCamera(ndc, cam);
+  const meshes = [], map = new Map();
+  units.forEach((u) => [u.plane, u.frame].forEach((e) => { const m = e.getObject3D('mesh'); if (m) { meshes.push(m); map.set(m, u.i); } }));
+  const hits = raycaster.intersectObjects(meshes, false);
+  if (hits.length) openCard(map.get(hits[0].object));
+}
+
+(function setupTap() {
+  const layer = $('#tapLayer');
+  let down = null;
+  layer.addEventListener('pointerdown', (e) => { down = { id: e.pointerId, t: performance.now(), lx: e.clientX, ly: e.clientY, moved: 0 }; });
+  layer.addEventListener('pointermove', (e) => {
+    if (!down || e.pointerId !== down.id) return;
+    const dx = e.clientX - down.lx, dy = e.clientY - down.ly;
+    down.lx = e.clientX; down.ly = e.clientY; down.moved += Math.abs(dx) + Math.abs(dy);
+    if (!gyro.has && state.running && !state.arActive) {      // ジャイロが無いときだけ、ドラッグで見回す
+      look.yaw += dx * 0.006; look.pitch = clamp(look.pitch + dy * 0.006, -1.3, 1.3);
+    }
+  });
+  layer.addEventListener('pointerup', (e) => {
+    if (!down) return;
+    const d = down; down = null;
+    if (d.moved < 12 && performance.now() - d.t < 700) handleTap(e.clientX, e.clientY);   // ちょん、と押したらタップ
+  });
+  layer.addEventListener('pointercancel', () => { down = null; });
+})();
+
+/* ============================================================
+   12. カード（ポスターをタップしたとき）
+   ============================================================ */
+function openCard(i) {
+  const u = units[i], d = u.data;
+  $('#cardNo').textContent = 'No.' + String(i + 1).padStart(2, '0');
+  $('#cardTitle').textContent = d.title || '';
+  $('#cardAuthor').textContent = '制作：' + (d.author || '');
+  $('#cardDesc').textContent = d.description || '';
+  const img = $('#cardImg');
+  if (u.cardSrc) { img.src = u.cardSrc; img.style.display = 'block'; } else img.style.display = 'none';
+  $('#card').classList.add('show'); state.cardOpen = true;
+}
+function closeCard() { $('#card').classList.remove('show'); state.cardOpen = false; }
+$('#cardClose').addEventListener('click', closeCard);
+$('#card').addEventListener('click', (e) => { if (e.target === $('#card')) closeCard(); });
+
+/* ============================================================
+   13. ボタン・スティックの動き
+   ============================================================ */
+document.querySelectorAll('#layoutBar button').forEach((b) => b.addEventListener('click', () => applyLayout(b.dataset.layout, false)));
+$('#recenterBtn').addEventListener('click', () => { recenter(); showToast('いまの場所と向きを、ギャラリーの正面にしました', 2800); });
+$('#backBtn').addEventListener('click', () => {
+  state.backward = !state.backward;
+  $('#backBtn').setAttribute('aria-pressed', String(state.backward));
+  $('#backBtn').textContent = '⇩ 後退：' + (state.backward ? 'ON' : 'OFF');
+});
+
+(function setupStick() {
+  const base = $('#stick'), knob = $('#stickKnob'), R = 42;
+  let id = null;
+  function set(e) {
+    const r = base.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let dx = e.clientX - cx, dy = e.clientY - cy;
+    const d = Math.hypot(dx, dy);
+    if (d > R) { dx *= R / d; dy *= R / d; }
+    knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    let x = dx / R, y = -dy / R;
+    if (Math.hypot(x, y) < 0.1) { x = 0; y = 0; }              // ちょっとの倒しは無視
+    state.stick.x = x; state.stick.y = y;
+  }
+  base.addEventListener('pointerdown', (e) => { id = e.pointerId; base.setPointerCapture(id); set(e); e.preventDefault(); });
+  base.addEventListener('pointermove', (e) => { if (e.pointerId === id) set(e); });
+  const end = (e) => { if (e.pointerId === id) { id = null; state.stick.x = 0; state.stick.y = 0; knob.style.transform = 'translate(0,0)'; } };
+  base.addEventListener('pointerup', end); base.addEventListener('pointercancel', end);
+})();
+
+// AR中の「画面タップがARの操作として横取りされる」のを止める（UI部品すべて）
+uiEl.addEventListener('beforexrselect', (e) => e.preventDefault());
+document.querySelectorAll('#ui .ui-part, #tapLayer').forEach((el) => el.addEventListener('beforexrselect', (e) => e.preventDefault()));
+
+/* ============================================================
+   14. スタートボタン
+   ============================================================ */
+$('#startBtn').addEventListener('click', async () => {
+  if (state.started) return;
+  state.started = true;
+  $('#startBtn').disabled = true; $('#startBtn').textContent = 'じゅんび中…';
+
+  // iPhone の許可の確認は、ボタンを押した直後（この場）で始める必要がある
+  const permP = requestSensorPermissions();
+
+  if (!arInfo) arInfo = await arPromise;
+  if (arInfo.ok) {
+    setBadge('AR（本物のAR）', arInfo.why);
+    const ok = await tryEnterAR();
+    if (ok) return;                                              // 成功：onARStarted が続きをやる
+    await startCameraMode(permP, 'ARを始められなかったため、カメラ＋ジャイロに切りかえました');
+  } else {
+    await startCameraMode(permP, arInfo.why + '。カメラ映像の上に表示します');
+  }
+});
+
+/* ============================================================
+   15. 起動
+   ============================================================ */
+$('#startTitle').textContent = EXHIBITION_TITLE;
+$('#startSub').textContent = EXHIBITION_SUB;
+$('#diagBuild').textContent = 'ビルド番号：' + BUILD_NUMBER;
+const arPromise = checkAR().then((r) => { arInfo = r; renderDiag(r); return r; });
+
+POSTERS.forEach((p, i) => units.push(createPosterUnit(i, p)));
+FLOATERS.forEach((f, i) => floaters.push(createFloater(i, f)));
+applyLayout('circle', true);
+
+function afterSceneLoaded() {
+  try { sceneEl.renderer.setClearColor(0x000000, 0); } catch (e) {}   // 背景は透明（現実の映像を見せる）
+}
+if (sceneEl.hasLoaded) afterSceneLoaded(); else sceneEl.addEventListener('loaded', afterSceneLoaded);
+
+})();
+</script>
+</body>
+</html>
