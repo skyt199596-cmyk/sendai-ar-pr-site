@@ -5,17 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>WebAR Poster Gallery</title>
 
-<!-- 文字（Noto Sans JP）を読み込みます。ネットにつながっていなくても、別の文字で表示されるだけで動きます -->
+<!-- 文字（Noto Sans JP）を読み込みます -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 
-<!-- 3Dの部品（A-Frame 1.5.0）。このまま変えないでください -->
+<!-- 3Dの部品（A-Frame 1.5.0） -->
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 
 <!-- ============================================================
      ★★★ ここが「設定エリア」です ★★★
-     生徒が書きかえるのは、基本的にこの四角の中だけ！
      書きかえるときは「 ' ' 」や「 , 」を消さないように気をつけてね。
      ※ 日本語は ja、英語は en のほうに書きます。
      ============================================================ -->
@@ -23,84 +22,120 @@
 /* ------------------------------------------------------------
    (1) 展示会の名前（スタート画面に大きく出ます）
    ------------------------------------------------------------ */
-const EXHIBITION_TITLE = { ja: '☆薩摩川内市ARPR展☆', en: 'Satsuma Sendai City ARPR Exhibition' };
-const EXHIBITION_SUB   = { ja: '鹿児島県立川内商工高等学校インテリア科課題研究作品',   en: 'Works by the Interior Design Dept., Sendai Commercial & Technical High School' };
+const EXHIBITION_TITLE = { ja: '薩摩川内 地域紹介ポスター展', en: 'Satsumasendai Local Poster Exhibition' };
+const EXHIBITION_SUB   = { ja: '○○高校 デザイン授業 作品',     en: 'Works by the ○○ High School design class' };
 
 /* ------------------------------------------------------------
    (2) ポスター一覧
-   1まいぶんが { ... }, のまとまりです。ふやすときは、まとまりごとコピーして
-   うしろに貼りつけてください（最後にも , を忘れずに）。
-     image       … 画像ファイルの名前（images フォルダの中に入れる）
-     title       … ポスターのタイトル          （title_en … 英語版）
-     author      … 制作した人の名前            （author_en … 英語版）
-     description … 解説文                      （description_en … 英語版）
-   ※ 英語版（_en）を書かなかったときは、日本語がそのまま出ます。
-   ※ 画像が見つからないときは、タイトル入りの「仮ポスター」が自動で出ます。
-   ※ 画像は A4たて（たて：よこ ＝ 1.41：1）で作ると、ぴったり入ります。
+     image          … 画像ファイルの名前（images フォルダの中に入れる）
+     title          … ポスターのタイトル（title_en … 英語版）
+     spot           … スポット名（spot_en … 英語版）※旧authorから変更
+     mapQuery       … Googleマップで検索する場所の名前・住所
+     description    … 解説文（description_en … 英語版）
+     hasFullWaterfall … true にすると、ポスター近くに「藤本滝の実物大を見る」ボタンが出ます
    ------------------------------------------------------------ */
 const POSTERS = [
-  { image: 'images/poster1.jpg', title: 'がらっぱ最中',   author: 'フランス川畑', description: '甘さ控えめでサクサクしているがらっぱの形をしたかわいいもなか菓子。',
-    title_en: 'Garappa monaka', author_en: 'France KAWABATA', description_en: 'A cute, crispy *monaka* confection shaped like a *garappa* , with a subtly sweet flavor.' },
-  { image: 'images/poster2.jpg', title: 'たまごむっかん',     author: 'あまつや', description: 'ふわふわ生地の優しい味わいで子供から大人まで食べやすいです。',
-    title_en: 'Tamagomukkann', author_en: 'AMATUYA', description_en: 'With its fluffy texture and gentle flavor, it’s easy for everyone—from children to adults—to enjoy.' },
-  { image: 'images/poster3.jpg', title: '藤本滝',   author: '藤本滝', description: '薩摩川内市の自然を感じることができお盆前後には滝のライトアップもあります。',
-    title_en: 'Fujimoto Falls', author_en: 'Fujimoto Falls', description_en: 'You can experience the natural beauty of Satsumasendai City, and around the time of the Obon holiday, the waterfall is illuminated.' },
-  { image: 'images/poster4.jpg', title: '西方海岸',       author: '西方海岸',   description: 'きれいな海を見ることができ、7月から8月のあいだは海水浴もできます。',
-    title_en: 'NISIKATA Cuost', author_en: 'NISIKATA Coast', description_en: 'You can enjoy views of a beautiful sea, and between July and August, you can also go swimming.' },
-  { image: 'images/poster5.jpg', title: '寺山いこいの広場',   author: '寺山いこいの広場', description: '大きな公園、ゴーカート、せんだい宇宙館、などと色々あり幅広い世代で楽しむことができます。',
-    title_en: 'Terayama Recreation Plaza', author_en: 'Terayama Recreation Plaza', description_en: 'With features like a large park, go-karts, and the Sendai Space Museum, there is plenty for people of all ages to enjoy.' },
-  { image: 'images/poster6.jpg', title: 'まちの人びと',   author: '1年C組 伊藤 蓮',   description: 'あたたかい人たちが暮らすまちの魅力を、イラストと言葉で伝えます。',
-    title_en: 'People of the Town', author_en: 'Ren Ito (Year 1, Class C)', description_en: 'The charm of a town where warm-hearted people live, told through illustrations and words.' }
+  {
+    image: 'images/poster1.jpg',
+    title: '藤本滝（ふじもとだき）',
+    spot: '藤本滝（薩摩川内市祁答院町）',
+    mapQuery: '藤本滝 鹿児島県薩摩川内市',
+    description: '豊かな緑に囲まれた迫力ある名瀑。マイナスイオンたっぷりの水しぶきを、実物大モードでも体感できます！',
+    title_en: 'Fujimoto Waterfall',
+    spot_en: 'Fujimoto Falls (Kedoin, Satsumasendai)',
+    description_en: 'A powerful, scenic waterfall surrounded by lush greenery. Experience its true massive scale in Life-Size mode!',
+    hasFullWaterfall: true
+  },
+  {
+    image: 'images/poster2.jpg',
+    title: 'がらっぱもなか',
+    spot: '薩摩川内市内 和菓子店・物産館',
+    mapQuery: '薩摩川内市 物産館',
+    description: '甘さは控えめサクサクしていてがらっぱ（河童）の形をしたかわいいもなか菓子。',
+    title_en: 'Garappa Monaka',
+    spot_en: 'Local Sweets Shops in Satsumasendai',
+    description_en: 'A cute, crispy monaka sweet shaped like a kappa, with a subtle sweetness.'
+  },
+  {
+    image: 'images/poster3.jpg',
+    title: 'たまごむっかん',
+    spot: '薩摩川内市 郷土菓子処',
+    mapQuery: '薩摩川内市 たまごむっかん',
+    description: 'ふわふわ生地の優しい味で小さい子供から大人まで食べやすい伝統のお菓子です。',
+    title_en: 'Tamagomukkan',
+    spot_en: 'Traditional Confectionery in Satsumasendai',
+    description_en: 'With its fluffy texture and gentle flavor, it is easy for everyone—from small children to adults—to enjoy.'
+  },
+  {
+    image: 'images/poster4.jpg',
+    title: '川内大綱引',
+    spot: '国道3号線 向田周辺（薩摩川内市）',
+    mapQuery: '川内大綱引 薩摩川内市',
+    description: '毎年秋に行われる伝統行事。全長365mの大綱を二手に分かれて引き合う迫力の祭りです。',
+    title_en: 'Sendai Otsunahiki',
+    spot_en: 'Mukaida Area, Route 3 (Satsumasendai)',
+    description_en: 'A traditional autumn festival where two teams pull a massive 365-meter rope.'
+  },
+  {
+    image: 'images/poster5.jpg',
+    title: '甑島の鹿島断崖',
+    spot: '下甑島 鹿島断崖（薩摩川内市）',
+    mapQuery: '鹿島断崖 薩摩川内市',
+    description: '甑島の海岸にそびえる迫力ある断崖。海の青とダイナミックな地層のコントラストが見どころです。',
+    title_en: 'Kashima Cliffs',
+    spot_en: 'Kashima Cliffs, Shimokoshiki Island',
+    description_en: 'Dramatic sea cliffs along the coast of Koshikijima Island with striking geological layers.'
+  },
+  {
+    image: 'images/poster6.jpg',
+    title: '入来麓の武家屋敷群',
+    spot: '入来麓伝統的建造物群保存地区',
+    mapQuery: '入来麓武家屋敷群 薩摩川内市',
+    description: '石垣と生け垣の道に江戸時代の武家屋敷が残る町並み。ゆっくり歩いて歴史を感じられます。',
+    title_en: 'Iriki Fumoto Samurai Residences',
+    spot_en: 'Iriki Fumoto Preservation District',
+    description_en: 'A historic townscape of stone walls and hedges where Edo-period samurai houses remain.'
+  }
 ];
 
 /* ------------------------------------------------------------
-   (3) ポスターを並べる「間隔の倍率」
-   1.0 = ふつう / 1.5 = ひろびろ / 0.8 = ぎゅっと
+   (3) ポスターの基本サイズと間隔の倍率
+   ・ポスターを以前より大きく設定（幅 1.15m × 高さ 1.62m）
+   ・SPACE_PRESETS: スタート画面で選ぶ「広い空間」「狭い空間」の倍率
    ------------------------------------------------------------ */
-const GAP = 0.8;
+const BASE_POSTER_W = 1.15;
+const BASE_POSTER_H = 1.62;
+const SPACE_PRESETS = {
+  wide:   { gap: 1.45, distOffset: 0.8 },  // 広い空間用（間隔ひろめ）
+  narrow: { gap: 0.95, distOffset: 0.0 }   // 狭い空間用（コンパクト・でも重ならない間隔）
+};
 
 /* ------------------------------------------------------------
-   (4) あるきモードの調整（iPhoneなど）
-   STEP_LENGTH    … 1歩で進む距離（メートル）。大きいほど1歩で遠くへ進む
-   STEP_THRESHOLD … 歩数をひろう「感度」。数字を小さくすると反応しやすく、
-                    大きくすると反応しにくくなる（歩いていないのに進むなら大きく）
+   (4) あるきモードの調整
    ------------------------------------------------------------ */
 const STEP_LENGTH    = 0.9;
 const STEP_THRESHOLD = 0.9;
 
 /* ------------------------------------------------------------
-   (5) 空間にうかべる大きな3Dオブジェクト（かんたんな形）
-     shape … 形：sphere(球) box(はこ) torus(ドーナツ) torusKnot(むすび目)
-                  icosahedron(20面体) octahedron(8面体) dodecahedron(12面体)
-                  tetrahedron(4面体) cone(円すい) cylinder(円ばしら)
-     size  … 大きさ（メートル）。0.6〜1.4 の間で決めてね
-     color … 色（#ff6fa5 のような色コード）
-     style … 見た目：glossy(つや) / wire(ワイヤー) / glass(半透明)
-   ※ 置く場所は、ポスターと重ならないように自動で決まります。
+   (5) 空間にうかべる装飾3Dオブジェクト（かんたんな形）
    ------------------------------------------------------------ */
 const FLOATERS = [
-  { shape: 'sphere',       size: 1.2, color: '#ff6fa5', style: 'glossy' },
-  { shape: 'torus',        size: 1.0, color: '#6c8cff', style: 'wire'   },
-  { shape: 'icosahedron',  size: 1.3, color: '#7af0d0', style: 'glass'  },
-  { shape: 'box',          size: 0.9, color: '#ffd166', style: 'glossy' },
-  { shape: 'torusKnot',    size: 1.1, color: '#c084fc', style: 'glossy' },
+  { shape: 'sphere',       size: 1.1, color: '#ff6fa5', style: 'glossy' },
+  { shape: 'torus',        size: 0.9, color: '#6c8cff', style: 'wire'   },
+  { shape: 'icosahedron',  size: 1.2, color: '#7af0d0', style: 'glass'  },
+  { shape: 'box',          size: 0.8, color: '#ffd166', style: 'glossy' },
+  { shape: 'torusKnot',    size: 1.0, color: '#c084fc', style: 'glossy' },
   { shape: 'octahedron',   size: 0.8, color: '#ffffff', style: 'wire'   },
-  { shape: 'dodecahedron', size: 1.4, color: '#ff9f6b', style: 'glass'  },
-  { shape: 'cone',         size: 1.0, color: '#4ade80', style: 'glossy' },
-  { shape: 'sphere',       size: 0.7, color: '#60a5fa', style: 'glass'  },
-  { shape: 'tetrahedron',  size: 0.9, color: '#f472b6', style: 'wire'   },
-  { shape: 'cylinder',     size: 0.8, color: '#fde047', style: 'glossy' },
-  { shape: 'torus',        size: 1.4, color: '#34d399', style: 'glass'  }
+  { shape: 'dodecahedron', size: 1.2, color: '#ff9f6b', style: 'glass'  },
+  { shape: 'cone',         size: 0.9, color: '#4ade80', style: 'glossy' }
 ];
 
 /* ------------------------------------------------------------
    (6) 薩摩川内市の「見どころ」3Dオブジェクト
-   ここに書いた数だけ、空間にうかびます。タップすると説明カードが出ます。
-     model … 見どころの種類（下の LOCAL_SPOTS の名前のどれか）
-     size  … 大きさ（メートル）0.6〜1.4
-   同じ model を何度書いてもOK（大きさを変えると、ちがう見た目になります）。
+   スタート画面にも解説が一覧表示され、空間内でタップしても詳細＋Googleマップが出ます。
    ------------------------------------------------------------ */
 const LOCAL_FLOATERS = [
+  { model: 'waterfall',  size: 1.4 },
   { model: 'tsunahiki',  size: 1.4 },
   { model: 'cliff',      size: 1.3 },
   { model: 'lily',       size: 1.1 },
@@ -112,90 +147,115 @@ const LOCAL_FLOATERS = [
   { model: 'planet',     size: 1.0 },
   { model: 'dragonfly',  size: 1.0 },
   { model: 'bridge',     size: 1.4 },
-  { model: 'ferry',      size: 1.3 },
-  { model: 'lily',       size: 0.8 },
-  { model: 'dragonfly',  size: 0.7 },
-  { model: 'tsunahiki',  size: 0.9 }
+  { model: 'ferry',      size: 1.3 }
 ];
 
-/* 見どころの名前と説明（日本語 ja ／ 英語 en）。公開する前に、市の公式情報で内容を確かめてね */
+/* 見どころの名前・解説・Googleマップ検索ワード */
 const LOCAL_SPOTS = {
+  waterfall: {
+    mapQuery: '藤本滝 鹿児島県薩摩川内市',
+    ja: { name: '藤本滝（ミニチュア＆実物大）', desc: '薩摩川内市祁答院町にある美しい滝。実物大ボタンを押すと、高さ約15mの本物のスケールが目の前に現れます！' },
+    en: { name: 'Fujimoto Waterfall', desc: 'A beautiful waterfall in Kedoin, Satsumasendai. Press the Life-Size button to see its true 15m height!' }
+  },
   tsunahiki: {
+    mapQuery: '川内大綱引 薩摩川内市',
     ja: { name: '川内大綱引', desc: '毎年秋に行われる、薩摩川内市を代表する伝統行事。大きな綱を二手に分かれて引き合う、迫力いっぱいの勝負です。' },
-    en: { name: 'Sendai Otsunahiki (Giant Tug-of-War)', desc: 'A traditional autumn event and a symbol of Satsumasendai. Two teams pull a huge rope in a thrilling contest.' } },
+    en: { name: 'Sendai Otsunahiki (Giant Tug-of-War)', desc: 'A traditional autumn event and a symbol of Satsumasendai. Two teams pull a huge rope in a thrilling contest.' }
+  },
   cliff: {
+    mapQuery: '鹿島断崖 薩摩川内市',
     ja: { name: '甑島の鹿島断崖', desc: '甑島の海岸にそびえる迫力ある断崖。海の青と岩の景色のコントラストが見どころです。' },
-    en: { name: 'Kashima Cliffs, Koshikijima', desc: 'Dramatic sea cliffs along the coast of the Koshikijima islands. Enjoy the contrast of blue sea and rugged rock.' } },
+    en: { name: 'Kashima Cliffs, Koshikijima', desc: 'Dramatic sea cliffs along the coast of the Koshikijima islands. Enjoy the contrast of blue sea and rugged rock.' }
+  },
   lily: {
+    mapQuery: '甑島 カノコユリ 薩摩川内市',
     ja: { name: '甑島のカノコユリ', desc: '夏に咲く、鹿の子（かのこ）模様の花。甑島を代表する花として知られています。' },
-    en: { name: 'Kanoko Lily of Koshikijima', desc: 'A spotted lily that blooms in summer, known as a flower of the Koshikijima islands.' } },
+    en: { name: 'Kanoko Lily of Koshikijima', desc: 'A spotted lily that blooms in summer, known as a flower of the Koshikijima islands.' }
+  },
   lagoon: {
+    mapQuery: '長目の浜 薩摩川内市',
     ja: { name: '長目の浜', desc: '上甑島にある景勝地。砂の浜が海と湖のようなラグーンを分けている、ふしぎな景色です。' },
-    en: { name: 'Nagame-no-hama Beach', desc: 'A scenic spot on Kamikoshiki island where a sandbar separates lagoon-like lakes from the sea.' } },
+    en: { name: 'Nagame-no-hama Beach', desc: 'A scenic spot on Kamikoshiki island where a sandbar separates lagoon-like lakes from the sea.' }
+  },
   river: {
+    mapQuery: '川内川 薩摩川内市',
     ja: { name: '川内川', desc: '市の中を流れて東シナ海にそそぐ、大きな川。まちの暮らしと歴史を見守ってきました。' },
-    en: { name: 'Sendai River', desc: 'A large river that flows through the city to the East China Sea, watching over local life and history.' } },
+    en: { name: 'Sendai River', desc: 'A large river that flows through the city to the East China Sea, watching over local life and history.' }
+  },
   samurai: {
+    mapQuery: '入来麓武家屋敷群 薩摩川内市',
     ja: { name: '入来麓の武家屋敷', desc: '石垣と生け垣の道に、江戸時代の武家屋敷が残る町並み。ゆっくり歩いて楽しめます。' },
-    en: { name: 'Iriki Fumoto Samurai Residences', desc: 'A townscape of stone walls and hedges where samurai houses from the Edo period remain. Great for a slow stroll.' } },
+    en: { name: 'Iriki Fumoto Samurai Residences', desc: 'A townscape of stone walls and hedges where samurai houses from the Edo period remain. Great for a slow stroll.' }
+  },
   onsen: {
-    ja: { name: '薩摩川内の温泉', desc: '市内には温泉地がいくつもあります。観光の疲れをのんびりいやせます。' },
-    en: { name: 'Hot Springs', desc: 'Satsumasendai has several hot spring areas, perfect for relaxing after a day of sightseeing.' } },
+    mapQuery: '川内高城温泉 薩摩川内市',
+    ja: { name: '薩摩川内の温泉', desc: '市内には川内高城温泉や市比野温泉など歴史ある温泉地がいくつもあります。' },
+    en: { name: 'Hot Springs of Satsumasendai', desc: 'Satsumasendai has several historic hot spring areas, perfect for relaxing after sightseeing.' }
+  },
   shinkansen: {
+    mapQuery: '川内駅 鹿児島県薩摩川内市',
     ja: { name: '九州新幹線 川内駅', desc: '九州新幹線が止まる川内駅。鹿児島方面や博多方面へのアクセスに便利です。' },
-    en: { name: 'Kyushu Shinkansen – Sendai Station', desc: 'Sendai Station is a stop on the Kyushu Shinkansen, with easy access to Kagoshima and Hakata.' } },
+    en: { name: 'Kyushu Shinkansen – Sendai Station', desc: 'Sendai Station is a stop on the Kyushu Shinkansen, with easy access to Kagoshima and Hakata.' }
+  },
   planet: {
-    ja: { name: 'せんだい宇宙館', desc: '星や宇宙について楽しく学べる施設です。' },
-    en: { name: 'Sendai Space Museum', desc: 'A facility where you can enjoy learning about stars and space.' } },
+    mapQuery: 'せんだい宇宙館 薩摩川内市',
+    ja: { name: 'せんだい宇宙館', desc: '寺山いこいの広場にある天文台。星や宇宙について楽しく学べる施設です。' },
+    en: { name: 'Sendai Space Museum', desc: 'An observatory and museum where you can enjoy learning about stars and space.' }
+  },
   dragonfly: {
+    mapQuery: '藺牟田池 薩摩川内市',
     ja: { name: '藺牟田池とベッコウトンボ', desc: '火山のくぼ地にできた池。まわりの湿地は、ベッコウトンボなど貴重な生きものの住みかです。' },
-    en: { name: 'Imuta Pond and the Bekko Dragonfly', desc: 'A pond formed in a volcanic crater. The surrounding wetland is a precious habitat for rare creatures such as the Bekko dragonfly.' } },
+    en: { name: 'Imuta Pond and the Bekko Dragonfly', desc: 'A pond formed in a volcanic crater. The surrounding wetland is a precious habitat for rare creatures.' }
+  },
   bridge: {
-    ja: { name: '甑大橋', desc: '上甑島と中甑島をつなぐ橋。島めぐりの旅がぐっと楽になりました。' },
-    en: { name: 'Koshiki Ohashi Bridge', desc: 'A bridge connecting Kamikoshiki and Nakakoshiki islands, making island tours much easier.' } },
+    mapQuery: '甑大橋 薩摩川内市',
+    ja: { name: '甑大橋', desc: '上甑島と中甑島をつなぐ全長1,533mの橋。島めぐりの旅がぐっと楽になりました。' },
+    en: { name: 'Koshiki Ohashi Bridge', desc: 'A 1,533m bridge connecting Kamikoshiki and Nakakoshiki islands, making island tours much easier.' }
+  },
   ferry: {
-    ja: { name: '甑島へのフェリー', desc: '川内港などから、フェリーや高速船で甑島へ渡れます。船旅も楽しみのひとつです。' },
-    en: { name: 'Ferry to Koshikijima', desc: 'You can cross to the Koshikijima islands by ferry or high-speed boat from ports such as Sendai Port. The sea trip is part of the fun.' } }
+    mapQuery: '川内港高速船ターミナル 薩摩川内市',
+    ja: { name: '甑島へのフェリー・高速船', desc: '川内港や串木野新港から甑島へ渡れます。青い海を渡る船旅も楽しみのひとつです。' },
+    en: { name: 'Ferry to Koshikijima', desc: 'Cross to the Koshikijima islands by ferry or high-speed boat from Sendai Port.' }
+  }
 };
 
 /* ------------------------------------------------------------
-   (7) ポスターの真上で回る「アイキャッチ」の形（ポスターの順番にくり返し使います）
+   (7) ポスターの真上で回る「アイキャッチ」の形
    ------------------------------------------------------------ */
 const EYECATCHES = ['torus', 'icosahedron', 'octahedron', 'torusKnot', 'dodecahedron', 'sphere'];
 
 /* ------------------------------------------------------------
-   (8) そのほか（ふつうは変えなくてOK）
-   STICK_SPEED   … スティックを いっぱいに倒したときの速さ（メートル／秒）
-   STUCK_SECONDS … ARが始まってから、スマホの位置が動かない時間がこの秒数つづくと知らせる
-   BGM_VOLUME    … BGMの最初の音量（0〜1）
-   BUILD_NUMBER  … 公開するたびに書きかえると、新しい版か見分けやすい
+   (8) そのほか
    ------------------------------------------------------------ */
-const STICK_SPEED   = 1.6;
+const STICK_SPEED   = 1.8;
 const STUCK_SECONDS = 7;
-const BGM_VOLUME    = 0.6;
-const BUILD_NUMBER  = 'build 2026.11.11-02';
+const BGM_VOLUME    = 0.65;
+const BUILD_NUMBER  = 'build 2026.11.27-v2';
 /* ★★★ 設定エリアはここまで ★★★ */
 </script>
 
 <style>
 /* ===== 見た目（デザイン）の設定 ===== */
 :root{
-  --active-bg:linear-gradient(135deg,#4f6df0,#d64a93);   /* えらんでいるボタンの色（白い文字が読みやすい濃さ） */
+  --active-bg:linear-gradient(135deg,#4f6df0,#d64a93);
+  --accent-waterfall:linear-gradient(135deg,#0284c7,#06b6d4);
   --safe-t:env(safe-area-inset-top,0px);
-  --safe-b:env(safe-area-inset-b,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
 }
 /* 夜モードの色 */
 body[data-theme="night"]{
-  --text:#ffffff; --glass:rgba(16,22,46,.76); --glass-line:rgba(255,255,255,.26);
+  --text:#ffffff; --glass:rgba(16,22,46,.78); --glass-line:rgba(255,255,255,.26);
   --panel:rgba(14,19,42,.96); --seg-bg:rgba(255,255,255,.12);
-  --bar-bg:rgba(12,16,36,.90); --bar-item:rgba(255,255,255,.10); --card-bg:rgba(18,24,50,.92);
+  --bar-bg:rgba(12,16,36,.92); --bar-item:rgba(255,255,255,.10); --card-bg:rgba(18,24,50,.95);
   --start-bg:radial-gradient(circle at 20% 15%,rgba(124,156,255,.5),transparent 45%),radial-gradient(circle at 85% 80%,rgba(255,122,182,.4),transparent 45%),linear-gradient(160deg,#0d1226,#1b1440);
 }
 /* 昼モードの色 */
 body[data-theme="day"]{
-  --text:#1a2040; --glass:rgba(255,255,255,.86); --glass-line:rgba(26,32,64,.16);
+  --text:#1a2040; --glass:rgba(255,255,255,.88); --glass-line:rgba(26,32,64,.16);
   --panel:rgba(255,255,255,.97); --seg-bg:rgba(26,32,64,.08);
-  --bar-bg:rgba(255,255,255,.94); --bar-item:rgba(26,32,64,.07); --card-bg:rgba(255,255,255,.95);
+  --bar-bg:rgba(255,255,255,.94); --bar-item:rgba(26,32,64,.07); --card-bg:rgba(255,255,255,.96);
   --start-bg:radial-gradient(circle at 20% 15%,rgba(124,180,255,.55),transparent 50%),radial-gradient(circle at 85% 80%,rgba(255,180,210,.55),transparent 50%),linear-gradient(160deg,#dcebff,#fff1e6);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -208,7 +268,7 @@ a-scene{position:fixed!important;inset:0;z-index:1;}
 a-scene .a-canvas{background:transparent!important;}
 .a-enter-vr,.a-enter-ar,.a-enter-vr-button,.a-enter-ar-button{display:none!important;}
 #camVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;display:none;background:#000;}
-body[data-theme="night"] #camVideo{filter:brightness(.62) saturate(.9) contrast(1.05);}   /* 夜モード：カメラ映像を少し暗く */
+body[data-theme="night"] #camVideo{filter:brightness(.65) saturate(.92) contrast(1.05);}
 #ui{position:fixed;inset:0;z-index:10;pointer-events:none;color:var(--text);}
 #ui .ui-part,#tapLayer{pointer-events:auto;}
 #tapLayer{position:absolute;inset:0;}
@@ -225,26 +285,72 @@ body.mode-camera.running .camonly{display:flex;}
 .camonly-block{display:none;}
 body.mode-camera.running .camonly-block{display:block;}
 
-/* 左上：いまのモードと理由（メニューボタンにかぶらない幅） */
+/* 左上：いまのモードと理由 */
 #modeBadge{
-  position:absolute;z-index:55;top:calc(var(--safe-t) + 10px);left:10px;max-width:calc(100vw - 80px);
-  padding:9px 14px;display:flex;flex-direction:column;gap:2px;font-size:12px;line-height:1.5;
+  position:absolute;z-index:55;top:calc(var(--safe-t) + 10px);left:calc(var(--safe-l) + 10px);
+  max-width:calc(100vw - 170px);
+  padding:8px 12px;display:flex;flex-direction:column;gap:2px;font-size:11.5px;line-height:1.4;
 }
-#modeName{font-weight:700;font-size:13px;display:flex;align-items:flex-start;gap:6px;}
-#modeName::before{content:'';flex:none;margin-top:5px;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;}
-#modeReason{opacity:.9;}
+#modeName{font-weight:700;font-size:12.5px;display:flex;align-items:center;gap:6px;}
+#modeName::before{content:'';flex:none;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;}
+#modeReason{opacity:.88;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 
-/* 右上：ハンバーガーメニューのボタン */
+/* 右上エリア：トップ画面に「再配置ボタン」＋「メニューボタン」を配置 */
+#topRightActions{
+  position:absolute;z-index:56;top:calc(var(--safe-t) + 10px);right:calc(var(--safe-r) + 10px);
+  gap:8px;align-items:center;
+}
+#topRecenterBtn{
+  height:46px;padding:0 13px;border-radius:16px;font:inherit;font-size:13px;font-weight:800;
+  display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;
+  background:var(--active-bg);color:#fff;border:0;box-shadow:0 6px 18px rgba(79,109,240,.45);
+}
+#topRecenterBtn:active{transform:scale(.95);}
+
 #menuBtn{
-  position:absolute;z-index:56;top:calc(var(--safe-t) + 10px);right:10px;width:46px;height:46px;padding:0;
-  flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;border-radius:16px;font:inherit;
+  width:46px;height:46px;padding:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  cursor:pointer;border-radius:16px;font:inherit;
 }
 #menuBtn span{display:block;width:20px;height:2.5px;border-radius:2px;background:var(--text);}
 #menuBtn:active{transform:scale(.94);}
-/* 右上（メニューの下）：歩数 */
-#stepChip{position:absolute;top:calc(var(--safe-t) + 64px);right:10px;padding:7px 12px;font-size:13px;font-weight:700;align-items:center;gap:6px;}
 
-/* 赤い帯（エラー）：タップするまで消えない */
+/* 右上（ボタンの下）：歩数チップ */
+#stepChip{
+  position:absolute;top:calc(var(--safe-t) + 64px);right:calc(var(--safe-r) + 10px);
+  padding:6px 12px;font-size:12.5px;font-weight:700;align-items:center;gap:6px;
+}
+
+/* 滝実物大モードのバナー・解除ボタン */
+#waterfallBanner{
+  position:absolute;z-index:54;top:calc(var(--safe-t) + 66px);left:50%;transform:translateX(-50%);
+  display:none;align-items:center;gap:10px;padding:8px 14px;border-radius:99px;
+  background:var(--accent-waterfall);color:#fff;font-size:13px;font-weight:800;
+  box-shadow:0 8px 24px rgba(2,132,199,.45);white-space:nowrap;
+}
+#waterfallBanner.show{display:flex;}
+#waterfallBanner button{
+  border:0;background:rgba(255,255,255,.25);color:#fff;font:inherit;font-size:12px;font-weight:800;
+  padding:4px 10px;border-radius:99px;cursor:pointer;
+}
+
+/* 右下：選択中ポスターの拡大・縮小コントロール */
+#zoomPanel{
+  position:absolute;z-index:52;right:calc(var(--safe-r) + 14px);bottom:calc(var(--safe-b) + 92px);
+  display:none;flex-direction:column;align-items:center;gap:6px;padding:8px;border-radius:20px;
+}
+body.running #zoomPanel.show{display:flex;}
+#zoomLabel{font-size:11px;font-weight:800;opacity:.85;max-width:86px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.zoom-btns{display:flex;flex-direction:column;gap:6px;}
+.zoom-btn{
+  width:44px;height:44px;border-radius:14px;border:1px solid var(--glass-line);
+  background:var(--seg-bg);color:var(--text);font:inherit;font-size:18px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.zoom-btn.reset{font-size:11px;height:32px;}
+.zoom-btn:active{transform:scale(.93);}
+
+/* 赤い帯（エラー） */
 #errBar{
   position:absolute;z-index:60;left:10px;right:10px;top:calc(var(--safe-t) + 110px);display:none;
   background:rgba(200,25,25,.96);color:#fff;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.55;
@@ -252,9 +358,9 @@ body.mode-camera.running .camonly-block{display:block;}
 }
 #errBar.show{display:block;}
 
-/* ひとことメッセージ（スティックより上に出す） */
+/* ひとことメッセージ */
 #toast{
-  position:absolute;z-index:58;left:50%;bottom:calc(var(--safe-b) + 236px);transform:translate(-50%,8px);
+  position:absolute;z-index:58;left:50%;bottom:calc(var(--safe-b) + 230px);transform:translate(-50%,8px);
   max-width:min(88vw,460px);padding:10px 16px;font-size:13px;line-height:1.55;text-align:center;
   opacity:0;pointer-events:none!important;transition:opacity .3s,transform .3s;
 }
@@ -262,38 +368,48 @@ body.mode-camera.running .camonly-block{display:block;}
 
 /* 左下：アナログスティック */
 #stick{
-  position:absolute;left:18px;bottom:calc(var(--safe-b) + 100px);width:120px;height:120px;border-radius:50%;
+  position:absolute;left:calc(var(--safe-l) + 18px);bottom:calc(var(--safe-b) + 94px);
+  width:116px;height:116px;border-radius:50%;
   display:none;touch-action:none;background:var(--glass);border:1px solid var(--glass-line);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.3);
 }
 body.stick-on.running #stick{display:block;}
 #stickKnob{
-  position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;
+  position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;
   background:var(--active-bg);box-shadow:0 4px 14px rgba(0,0,0,.4);
 }
 
-/* 下：レイアウト切りかえ（文字を大きく・背景を濃くして読みやすく） */
+/* 下：レイアウト切りかえ */
 #layoutBar{
   position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 12px);
   width:min(94vw,430px);padding:6px;gap:6px;border-radius:22px;
   background:var(--bar-bg);border:1px solid var(--glass-line);box-shadow:0 10px 30px rgba(0,0,0,.35);
 }
 #layoutBar button{
-  flex:1;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-  font:inherit;font-size:13.5px;font-weight:700;letter-spacing:.02em;color:var(--text);
-  background:var(--bar-item);border:0;border-radius:16px;padding:8px 4px;cursor:pointer;transition:background .25s,transform .1s;
+  flex:1;min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font:inherit;font-size:13px;font-weight:700;letter-spacing:.02em;color:var(--text);
+  background:var(--bar-item);border:0;border-radius:16px;padding:6px 4px;cursor:pointer;transition:background .25s,transform .1s;
 }
 #layoutBar button:active{transform:scale(.96);}
-#layoutBar button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;}
+#layoutBar button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;}
 #layoutBar button.active{background:var(--active-bg);color:#fff;box-shadow:0 4px 14px rgba(79,109,240,.5);}
 
+/* ===== 横画面（Landscape）自動最適化 ===== */
+body.is-landscape #modeBadge{max-width:340px;}
+body.is-landscape #layoutBar{width:min(54vw,380px);bottom:calc(var(--safe-b) + 8px);}
+body.is-landscape #layoutBar button{min-height:44px;flex-direction:row;gap:6px;font-size:12.5px;}
+body.is-landscape #stick{bottom:calc(var(--safe-b) + 14px);width:104px;height:104px;}
+body.is-landscape #zoomPanel{bottom:calc(var(--safe-b) + 14px);}
+body.is-landscape .zoom-btns{flex-direction:row;}
+body.is-landscape #toast{bottom:calc(var(--safe-b) + 70px);}
+
 /* ハンバーガーメニュー本体 */
-#menu{position:absolute;inset:0;z-index:45;visibility:hidden;transition:visibility 0s linear .3s;}
+#menu{position:absolute;inset:0;z-index:65;visibility:hidden;transition:visibility 0s linear .3s;}
 #menu.open{visibility:visible;transition-delay:0s;}
-.menu-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.4);opacity:0;transition:opacity .3s;}
+.menu-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .3s;}
 #menu.open .menu-backdrop{opacity:1;}
 .menu-panel{
-  position:absolute;top:0;right:0;bottom:0;width:min(88vw,350px);overflow-y:auto;touch-action:pan-y;
+  position:absolute;top:0;right:0;bottom:0;width:min(88vw,360px);overflow-y:auto;touch-action:pan-y;
   padding:calc(var(--safe-t) + 14px) 16px calc(var(--safe-b) + 24px);
   background:var(--panel);color:var(--text);border-left:1px solid var(--glass-line);
   backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
@@ -303,68 +419,98 @@ body.stick-on.running #stick{display:block;}
 .menu-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
 .menu-head h2{margin:0;font-size:20px;font-weight:900;}
 .icon-btn{width:40px;height:40px;border-radius:12px;border:0;font:inherit;font-size:18px;color:var(--text);background:var(--seg-bg);cursor:pointer;}
-.menu-sec{padding:14px 0;border-bottom:1px solid var(--glass-line);}
+.menu-sec{padding:13px 0;border-bottom:1px solid var(--glass-line);}
 .menu-sec:last-child{border-bottom:0;}
-.menu-sec h3{margin:0 0 9px;font-size:12px;letter-spacing:.06em;opacity:.75;font-weight:700;}
-.menu-sec p{margin:0;font-size:13px;line-height:1.75;opacity:.92;}
+.menu-sec h3{margin:0 0 8px;font-size:12px;letter-spacing:.06em;opacity:.75;font-weight:700;}
+.menu-sec p{margin:0;font-size:13px;line-height:1.7;opacity:.92;}
 .seg{display:flex;background:var(--seg-bg);border-radius:14px;padding:3px;gap:2px;}
 .seg button{
-  flex:1;border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;font-weight:700;
-  padding:10px 8px;border-radius:11px;cursor:pointer;
+  flex:1;border:0;background:transparent;color:var(--text);font:inherit;font-size:13.5px;font-weight:700;
+  padding:9px 8px;border-radius:11px;cursor:pointer;
 }
 .seg button.on{background:var(--active-bg);color:#fff;}
 .menu-btn{
-  width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:14px;
+  width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:14px;
   border:1px solid var(--glass-line);background:var(--seg-bg);color:var(--text);font:inherit;font-weight:700;font-size:14px;cursor:pointer;
 }
 .menu-btn:active{transform:scale(.98);}
 .menu-btn.primary,.menu-btn[aria-pressed="true"]{background:var(--active-bg);color:#fff;border-color:transparent;}
+.menu-btn.map-btn{background:#10b981;color:#fff;border-color:transparent;text-decoration:none;margin-bottom:8px;}
+.menu-btn.waterfall-btn{background:var(--accent-waterfall);color:#fff;border-color:transparent;margin-bottom:8px;}
 .row{display:flex;gap:10px;align-items:center;}
-.row .menu-btn{width:auto;flex:none;min-width:96px;}
+.row .menu-btn{width:auto;flex:none;min-width:92px;}
 #bgmVol{flex:1;min-width:0;accent-color:#6c8cff;touch-action:pan-x;height:32px;}
 
 /* ポスター・見どころをタップしたときのカード */
 #card{
-  position:absolute;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:16px;
-  background:rgba(8,10,24,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  position:absolute;inset:0;z-index:62;display:none;align-items:center;justify-content:center;padding:16px;
+  background:rgba(8,10,24,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
 }
 #card.show{display:flex;animation:fadeIn .25s ease;}
 .card-inner{
-  width:100%;max-width:440px;max-height:calc(100% - 20px);overflow-y:auto;touch-action:pan-y;
+  width:100%;max-width:460px;max-height:calc(100% - 20px);overflow-y:auto;touch-action:pan-y;
   padding:16px;border-radius:26px;background:var(--card-bg);color:var(--text);
 }
-#cardImg{width:100%;max-height:42vh;object-fit:contain;border-radius:14px;background:#fff;display:block;}
-.card-no{display:inline-block;margin:14px 0 6px;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;background:var(--active-bg);color:#fff;}
-#cardTitle{margin:2px 0 2px;font-size:22px;font-weight:900;line-height:1.35;}
-#cardAuthor{margin:0 0 10px;font-size:13px;opacity:.85;}
-#cardDesc{margin:0 0 14px;font-size:14px;line-height:1.75;}
+body.is-landscape .card-inner{max-width:620px;display:grid;grid-template-columns:1fr 1.2fr;gap:14px;align-items:start;}
+body.is-landscape #cardImg{max-height:68vh;}
+#cardImg{width:100%;max-height:38vh;object-fit:contain;border-radius:14px;background:#fff;display:block;}
+.card-no{display:inline-block;margin:10px 0 4px;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;background:var(--active-bg);color:#fff;}
+#cardTitle{margin:2px 0 4px;font-size:21px;font-weight:900;line-height:1.3;}
+#cardSpot{margin:0 0 10px;font-size:13.5px;font-weight:700;opacity:.9;display:flex;align-items:center;gap:4px;}
+#cardDesc{margin:0 0 14px;font-size:14px;line-height:1.7;}
+.card-scale-row{display:flex;gap:8px;margin-bottom:8px;}
+.card-scale-row button{flex:1;padding:10px;font-size:13px;}
 
 /* スタート画面 */
 #start{
-  position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:70px 18px 24px;text-align:center;background:var(--start-bg);color:var(--text);overflow-y:auto;
+  position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;
+  padding:calc(var(--safe-t) + 74px) 16px calc(var(--safe-b) + 24px);
+  text-align:center;background:var(--start-bg);color:var(--text);overflow-y:auto;touch-action:pan-y;
 }
 #start.hide{display:none;}
-.start-card{width:100%;max-width:420px;padding:26px 22px;border-radius:28px;}
-.start-opts{display:flex;gap:8px;margin-bottom:16px;}
+.start-card{width:100%;max-width:460px;padding:22px 20px;border-radius:28px;margin:auto 0;}
+body.is-landscape .start-card{max-width:720px;padding:18px 22px;}
+.start-opts{display:flex;gap:8px;margin-bottom:12px;}
 .start-opts .seg{flex:1;}
+.space-select-box{margin-bottom:14px;text-align:left;}
+.space-select-label{font-size:11.5px;font-weight:800;opacity:.8;margin-bottom:5px;display:block;}
 .start-tag{display:inline-block;font-size:11px;letter-spacing:.14em;padding:4px 12px;border-radius:99px;background:var(--seg-bg);}
-#startTitle{margin:14px 0 6px;font-size:26px;line-height:1.35;font-weight:900;}
-#startSub{margin:0 0 18px;font-size:14px;opacity:.85;}
-.start-list{margin:0 0 20px;padding:0;list-style:none;font-size:13px;line-height:1.7;text-align:left;opacity:.95;}
-.start-list li{padding-left:1.4em;position:relative;}
-.start-list li::before{content:'●';position:absolute;left:0;color:#d64a93;font-size:10px;top:.25em;}
+#startTitle{margin:10px 0 4px;font-size:24px;line-height:1.3;font-weight:900;}
+#startSub{margin:0 0 14px;font-size:13.5px;opacity:.85;}
+.start-list{margin:0 0 16px;padding:0;list-style:none;font-size:12.5px;line-height:1.65;text-align:left;opacity:.95;}
+.start-list li{padding-left:1.3em;position:relative;margin-bottom:3px;}
+.start-list li::before{content:'●';position:absolute;left:0;color:#d64a93;font-size:9px;top:.25em;}
+
+/* スタート画面内の3Dオブジェクト解説セクション */
+.obj-guide{
+  margin:0 0 16px;text-align:left;background:var(--seg-bg);border-radius:16px;padding:10px 12px;
+  border:1px solid var(--glass-line);
+}
+.obj-guide-toggle{
+  width:100%;background:none;border:0;color:var(--text);font:inherit;font-size:13px;font-weight:800;
+  display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0;
+}
+.obj-guide-list{
+  margin-top:10px;max-height:175px;overflow-y:auto;display:grid;gap:8px;padding-right:4px;
+}
+.obj-guide-list.collapsed{display:none;}
+.obj-guide-item{
+  background:var(--card-bg);padding:9px 11px;border-radius:12px;font-size:12px;line-height:1.5;
+  border:1px solid var(--glass-line);
+}
+.obj-guide-item strong{display:block;font-size:13px;margin-bottom:2px;color:#6c8cff;}
+body[data-theme="day"] .obj-guide-item strong{color:#3b5bdb;}
+
 #startBtn{
-  width:100%;font:inherit;font-size:17px;font-weight:900;color:#fff;border:0;border-radius:18px;padding:16px;cursor:pointer;
+  width:100%;font:inherit;font-size:17px;font-weight:900;color:#fff;border:0;border-radius:18px;padding:15px;cursor:pointer;
   background:var(--active-bg);box-shadow:0 10px 28px rgba(79,109,240,.45);
 }
 #startBtn:disabled{opacity:.65;}
 #startBtn:active{transform:scale(.98);}
-.diag{margin-top:16px;font-size:12px;line-height:1.7;opacity:.85;max-width:420px;}
+.diag{margin-top:12px;font-size:11.5px;line-height:1.6;opacity:.82;max-width:460px;}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 </style>
 
-<!-- A-Frame に「毎フレーム動かす係」を登録（アニメーション用）。中身は下のほうの <script> にあります -->
 <script>
 AFRAME.registerComponent('gallery-loop', {
   tick: function (time, dt) { if (window.__galleryTick) window.__galleryTick(time, dt); }
@@ -373,24 +519,32 @@ AFRAME.registerComponent('gallery-loop', {
 </head>
 
 <body data-theme="night">
-<!-- カメラ映像（iPhoneなど。ARでないときの背景になる） -->
 <video id="camVideo" playsinline muted autoplay></video>
 
-<!-- ===== 画面に重ねる部品（ボタン・カードなど）===== -->
+<!-- ===== 画面に重ねる部品 ===== -->
 <div id="ui">
   <div id="tapLayer"></div>
 
-  <!-- 左上：いまのモードと理由（いつも表示） -->
+  <!-- 左上：いまのモードと理由 -->
   <div id="modeBadge" class="glass ui-part">
     <div id="modeName"></div>
     <div id="modeReason"></div>
   </div>
 
-  <!-- 右上：ハンバーガーメニューのボタン -->
-  <button id="menuBtn" class="glass hud ui-part" aria-label="Menu"><span></span><span></span><span></span></button>
+  <!-- 右上：再配置ボタン（トップ画面・AR中ともに常時アクセス可能）＋ ハンバーガーメニュー -->
+  <div id="topRightActions" class="hud ui-part">
+    <button id="topRecenterBtn" aria-label="Recenter">◎ <span data-i18n="top.recenter"></span></button>
+    <button id="menuBtn" class="glass" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
 
-  <!-- 歩数（カメラ＋ジャイロのときだけ） -->
+  <!-- 歩数チップ -->
   <div id="stepChip" class="glass camonly ui-part">👣 <span id="stepCount">0</span> <span data-i18n="step.unit"></span></div>
+
+  <!-- 藤本滝 実物大モード中バナー -->
+  <div id="waterfallBanner" class="ui-part">
+    <span>🌊 <span data-i18n="waterfall.active"></span></span>
+    <button id="waterfallCloseBtn" data-i18n="waterfall.close"></button>
+  </div>
 
   <!-- 赤い帯（エラー） -->
   <div id="errBar" class="ui-part" role="alert"></div>
@@ -400,6 +554,16 @@ AFRAME.registerComponent('gallery-loop', {
 
   <!-- 左下：アナログスティック -->
   <div id="stick" class="ui-part"><div id="stickKnob"></div></div>
+
+  <!-- 右下：タップしたポスターの拡大・縮小コントロール -->
+  <div id="zoomPanel" class="glass ui-part">
+    <div id="zoomLabel">Poster</div>
+    <div class="zoom-btns">
+      <button id="zoomInBtn" class="zoom-btn" aria-label="Zoom In">＋</button>
+      <button id="zoomOutBtn" class="zoom-btn" aria-label="Zoom Out">－</button>
+      <button id="zoomResetBtn" class="zoom-btn reset">100%</button>
+    </div>
+  </div>
 
   <!-- 下：レイアウト切りかえ -->
   <div id="layoutBar" class="glass hud ui-part">
@@ -414,7 +578,7 @@ AFRAME.registerComponent('gallery-loop', {
     </button>
   </div>
 
-  <!-- ハンバーガーメニュー（言語・昼夜・BGM・移動の設定をここにまとめる） -->
+  <!-- ハンバーガーメニュー -->
   <div id="menu" class="ui-part">
     <div class="menu-backdrop" id="menuBackdrop"></div>
     <aside class="menu-panel">
@@ -434,10 +598,17 @@ AFRAME.registerComponent('gallery-loop', {
         </div>
       </section>
       <section class="menu-sec">
+        <h3 data-i18n="menu.space"></h3>
+        <div class="seg">
+          <button data-space="wide">🏟 <span data-i18n="space.wide"></span></button>
+          <button data-space="narrow">🏠 <span data-i18n="space.narrow"></span></button>
+        </div>
+      </section>
+      <section class="menu-sec">
         <h3 data-i18n="menu.bgm"></h3>
         <div class="row">
           <button id="bgmBtn" class="menu-btn" aria-pressed="true">♪ <span id="bgmBtnText"></span></button>
-          <input id="bgmVol" type="range" min="0" max="100" step="1" value="60" aria-label="Volume">
+          <input id="bgmVol" type="range" min="0" max="100" step="1" value="65" aria-label="Volume">
         </div>
       </section>
       <section class="menu-sec camonly-block">
@@ -454,25 +625,54 @@ AFRAME.registerComponent('gallery-loop', {
     </aside>
   </div>
 
-  <!-- ポスター・見どころをタップしたときのカード（日本語はここ＝HTMLで表示します） -->
+  <!-- ポスター・見どころをタップしたときの詳細カード -->
   <div id="card" class="ui-part">
     <div class="card-inner">
       <img id="cardImg" alt="">
-      <span class="card-no" id="cardNo"></span>
-      <h2 id="cardTitle"></h2>
-      <p id="cardAuthor"></p>
-      <p id="cardDesc"></p>
-      <button id="cardClose" class="menu-btn"><span data-i18n="card.close"></span></button>
+      <div class="card-body">
+        <span class="card-no" id="cardNo"></span>
+        <h2 id="cardTitle"></h2>
+        <p id="cardSpot"></p>
+        <p id="cardDesc"></p>
+
+        <!-- 藤本滝実物大ボタン（対象ポスター・オブジェクト時のみ表示） -->
+        <button id="cardWaterfallBtn" class="menu-btn waterfall-btn" style="display:none;">
+          🌊 <span data-i18n="card.waterfallBtn"></span>
+        </button>
+
+        <!-- Googleマップ連携ボタン -->
+        <a id="cardMapBtn" class="menu-btn map-btn" target="_blank" rel="noopener noreferrer">
+          📍 <span data-i18n="card.mapBtn"></span>
+        </a>
+
+        <!-- ポスターサイズ調整ボタン（ポスター時のみ表示） -->
+        <div id="cardScaleRow" class="card-scale-row" style="display:none;">
+          <button id="cardZoomIn" class="menu-btn">🔍＋ <span data-i18n="card.zoomIn"></span></button>
+          <button id="cardZoomOut" class="menu-btn">🔍－ <span data-i18n="card.zoomOut"></span></button>
+        </div>
+
+        <button id="cardClose" class="menu-btn"><span data-i18n="card.close"></span></button>
+      </div>
     </div>
   </div>
 
-  <!-- スタート画面 -->
+  <!-- スタート画面（最初の画面） -->
   <div id="start" class="ui-part">
     <div class="start-card glass">
       <div class="start-opts">
         <div class="seg"><button data-lang="ja">日本語</button><button data-lang="en">English</button></div>
         <div class="seg"><button data-theme-set="day">☀</button><button data-theme-set="night">☾</button></div>
       </div>
+
+      <!-- 広さ選択（広い空間用 / 狭い空間用） -->
+      <div class="space-select-box">
+        <span class="space-select-label" data-i18n="start.spaceLabel"></span>
+        <div class="seg">
+          <button data-space="wide">🏟 <span data-i18n="space.wide"></span></button>
+          <button data-space="narrow">🏠 <span data-i18n="space.narrow"></span></button>
+        </div>
+      </div>
+
       <span class="start-tag">WEB AR GALLERY</span>
       <h1 id="startTitle"></h1>
       <p id="startSub"></p>
@@ -481,6 +681,16 @@ AFRAME.registerComponent('gallery-loop', {
         <li data-i18n="start.l2"></li>
         <li data-i18n="start.l3"></li>
       </ul>
+
+      <!-- 最初の画面に配置する3Dオブジェクトの説明 -->
+      <div class="obj-guide">
+        <button id="objGuideToggle" class="obj-guide-toggle" type="button">
+          <span>✨ <span data-i18n="start.objGuideTitle"></span></span>
+          <span id="objGuideArrow">▼</span>
+        </button>
+        <div id="objGuideList" class="obj-guide-list"></div>
+      </div>
+
       <button id="startBtn"></button>
     </div>
     <div class="diag">
@@ -490,8 +700,7 @@ AFRAME.registerComponent('gallery-loop', {
   </div>
 </div>
 
-<!-- ===== 3Dの世界 =====
-     壁や背景は作りません。カメラの映像の中に、ポスターと3Dオブジェクトだけがうかびます。 -->
+<!-- ===== 3Dの世界 ===== -->
 <a-scene id="scene" gallery-loop
   vr-mode-ui="enabled: false"
   loading-screen="enabled: false"
@@ -500,34 +709,26 @@ AFRAME.registerComponent('gallery-loop', {
   background="transparent: true"
   webxr="referenceSpaceType: local; requiredFeatures: local; optionalFeatures: dom-overlay; overlayElement: #ui">
 
-  <!-- リグ（＝自分の体）。歩くとこれが動きます。高さ1.4m＝目の高さ -->
   <a-entity id="rig" position="0 1.4 0">
-    <a-entity id="cam" camera="fov: 70; near: 0.05; far: 100" position="0 0 0"></a-entity>
+    <a-entity id="cam" camera="fov: 70; near: 0.05; far: 120" position="0 0 0"></a-entity>
   </a-entity>
 
-  <!-- あかり（昼と夜で色と強さを切りかえます） -->
   <a-entity id="lightAmbient" light="type: ambient; color: #ffffff; intensity: 0.95"></a-entity>
   <a-entity id="lightSun" light="type: directional; color: #fff4e0; intensity: 0.95" position="1 4 2"></a-entity>
 
-  <!-- ギャラリー本体（ポスターと3Dオブジェクトは、プログラムがここに作ります） -->
   <a-entity id="gallery"></a-entity>
 </a-scene>
 
 <script>
-/* ============================================================
-   ここから下は「しくみ」の部分です。ふつうは触らなくて大丈夫！
-   （読んでみたい人のために、日本語コメントをたくさん書いています）
-   ============================================================ */
 (function () {
 'use strict';
 
-/* ---------- 便利な小さい道具 ---------- */
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const nowS = () => performance.now() / 1000;
 const wrapAngle = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
-function mulberry32(seed) {                // 同じ並びを何度でも作れる乱数
+function mulberry32(seed) {
   return function () {
     seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
@@ -544,7 +745,6 @@ function hslToHex(h, s, l) {
 function withTimeout(p, ms) {
   return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 }
-// 設定の保存（言語・昼夜・BGM）。保存できない環境でもエラーにしない
 const store = {
   get: (k) => { try { return localStorage.getItem('wargallery.' + k); } catch (e) { return null; } },
   set: (k, v) => { try { localStorage.setItem('wargallery.' + k, v); } catch (e) {} }
@@ -552,90 +752,115 @@ const store = {
 
 /* ============================================================
    0. 言葉の辞書（日本語 ja ／ 英語 en）
-   {name} のような部分は、あとで数字や名前に入れかわります。
    ============================================================ */
 const I18N = {
   ja: {
     'sep': '',
-    'badge.mode': 'いまのモード：', 'badge.reason': '理由：',
-    'mode.pending': '判定中…', 'mode.ar': 'AR（本物のAR）', 'mode.cam': 'カメラ＋ジャイロ（ARではない）',
-    'mode.noGyro': 'カメラ＋ドラッグ（ジャイロなし）', 'mode.stuck': 'AR（位置が動かない状態）',
-    'why.checking': '端末をしらべています。',
-    'why.ios': 'iPhone / iPad はブラウザのAR（WebXR）に対応していないため。',
-    'why.notAndroid': 'Android ではない端末（パソコンなど）のため。',
-    'why.notChrome': 'Chrome ではないブラウザのため。',
-    'why.noXR': 'このブラウザにAR機能（WebXR）がないため。',
-    'why.noARCore': 'この端末はAR（ARCore）に対応していないため。',
-    'why.checkErr': 'ARが使えるか確認中にエラー（{name}）が出たため。',
-    'why.arOk': 'Android の Chrome で、この端末がARに対応しているため。実際に歩くとポスターに近づけます。',
-    'why.camTail': 'カメラ映像の上に表示し、スマホを動かして見回します。',
-    'why.arFailed': 'ARを始められなかったため、カメラ＋ジャイロに切りかえました。',
-    'why.noGyro': 'この端末ではジャイロの値が届いていないため。画面を指でドラッグして見回してください。',
-    'why.stuck': 'ARは始まりましたが、{sec}秒間スマホの位置が全く動きません。左下のスティックで移動できます。',
+    'badge.mode': 'モード：', 'badge.reason': '状態：',
+    'mode.pending': '判定中…', 'mode.ar': 'AR（本物のAR）', 'mode.cam': 'カメラ＋ジャイロ',
+    'mode.noGyro': 'カメラ＋ドラッグ', 'mode.stuck': 'AR（スティック移動可）',
+    'why.checking': '端末を確認中',
+    'why.ios': 'iPhone/iPadはカメラ＋ジャイロモードで動作',
+    'why.notAndroid': 'PC・非Android端末モード',
+    'why.notChrome': 'Chrome以外のブラウザモード',
+    'why.noXR': 'WebXR非対応ブラウザ',
+    'why.noARCore': 'ARCore非対応端末',
+    'why.checkErr': 'AR確認エラー（{name}）',
+    'why.arOk': '歩いてポスターに近づけます',
+    'why.camTail': 'スマホを動かして見回せます',
+    'why.arFailed': 'AR開始不可のためカメラモードへ移行',
+    'why.noGyro': '画面をドラッグして見回してください',
+    'why.stuck': '{sec}秒間移動なし。左下のスティックで移動可能',
     'short.ios': 'iPhone / iPad', 'short.notAndroid': 'Android以外', 'short.notChrome': 'Chrome以外',
-    'short.noXR': 'WebXRなし', 'short.noARCore': 'ARCore非対応', 'short.checkErr': '確認エラー', 'short.ok': 'Android の Chrome',
+    'short.noXR': 'WebXRなし', 'short.noARCore': 'ARCore非対応', 'short.checkErr': '確認エラー', 'short.ok': 'Android Chrome',
     'diag.checking': 'AR判定：しらべています…',
     'diag.ok': 'AR判定：○ 対応（{short}）',
-    'diag.ng': 'AR判定：× ARは使えません（{short}）→ カメラ＋ジャイロで動きます',
+    'diag.ng': 'AR判定：× カメラ＋ジャイロで動きます（{short}）',
     'diag.build': 'ビルド番号：{b}',
-    'start.l1': 'スマホを持って、空中にうかぶポスターや薩摩川内の見どころを見て回ろう',
-    'start.l2': 'はじめると「カメラ」と「動きセンサー」の許可を聞かれます。「許可」をえらんでね',
+    'start.spaceLabel': '展示スペースの広さをえらぶ',
+    'space.wide': '広い空間用', 'space.narrow': '狭い空間用',
+    'start.objGuideTitle': '空間にうかぶ3Dオブジェクト解説（タップで開閉）',
+    'start.l1': 'ポスターをタップすると拡大・縮小やGoogleマップ表示ができます',
+    'start.l2': '藤本滝の近くにあるボタンを押すと「実物大の滝」が出現します！',
     'start.l3': 'まわりの人や物にぶつからないよう、歩きスマホには気をつけて！',
     'start.btn': 'はじめる', 'start.busy': 'じゅんび中…', 'start.retry': 'もういちどはじめる',
+    'top.recenter': '再配置',
     'menu.title': 'メニュー', 'menu.lang': '言語 / LANGUAGE', 'menu.theme': '表示（昼・夜）', 'menu.day': '昼', 'menu.night': '夜',
+    'menu.space': 'スペースの広さ',
     'menu.bgm': 'BGM（音楽）', 'menu.bgmOn': 'ON', 'menu.bgmOff': 'OFF', 'menu.move': '移動',
     'menu.backOff': '⇩ 後退：OFF', 'menu.backOn': '⇩ 後退：ON', 'menu.recenter': '再配置（いまの場所を正面に）',
     'menu.help': 'あそびかた',
-    'menu.helpBody': '・スマホを動かして見回す ・歩くか、左下のスティックで進む ・ポスターや3Dの見どころをタップすると説明が出る ・下のボタンで並べ方を切りかえ ・ポスターが見にくいときは「再配置」',
+    'menu.helpBody': '・ポスターをタップすると詳細表示＆右下の＋－ボタンで拡大縮小 ・「Googleマップで見る」で実際の場所を確認 ・藤本滝の「実物大を見る」で高さ約15mの滝が出現 ・上部の「再配置」でいつでも正面にリセット',
     'layout.circle': 'サークル', 'layout.street': 'ストリート', 'layout.grid': 'グリッド',
-    'step.unit': '歩', 'card.close': '閉じる', 'card.by': '制作：', 'card.spotTag': '薩摩川内の見どころ',
-    'toast.recentered': 'いまの場所と向きを、ギャラリーの正面にしました',
-    'toast.arStart': 'ARが始まりました。歩いてポスターに近づいてみよう！',
-    'toast.camStart': '歩くと進みます。左下のスティックでも動けます。ポスターや見どころをタップすると詳しく見られます。',
+    'step.unit': '歩', 'card.close': '閉じる', 'card.spotPrefix': 'スポット：', 'card.spotTag': '薩摩川内の見どころ3D',
+    'card.mapBtn': 'Googleマップで場所を見る',
+    'card.waterfallBtn': '実物大の藤本滝を見る（高さ約15m）',
+    'card.zoomIn': 'ポスター拡大', 'card.zoomOut': 'ポスター縮小',
+    'waterfall.active': '藤本滝 実物大表示中（高さ約15m）',
+    'waterfall.close': 'もとに戻す',
+    'toast.recentered': 'いまの場所と向きを正面に再配置しました',
+    'toast.arStart': 'ARが始まりました！歩いてポスターに近づいてみよう',
+    'toast.camStart': 'ポスターをタップすると拡大縮小やマップ確認ができます',
     'toast.arEnded': 'ARを終了しました',
-    'toast.sensorDenied': '動きセンサーが許可されていません。画面をドラッグして見回してください（設定アプリ→Safari で許可できます）',
+    'toast.sensorDenied': '動きセンサー未許可のため、画面ドラッグで見回してください',
+    'toast.waterfallOn': '目の前に実物大の「藤本滝（高さ約15m）」が出現しました！上を見上げてみよう！',
+    'toast.waterfallOff': '実物大の滝を収納しました',
+    'toast.spaceChanged': 'スペース設定を変更し、間隔を再配置しました',
     'err.ar': 'ARを始められませんでした', 'err.arTimeout': 'ARが25秒たっても始まりませんでした',
     'err.cam': 'カメラを使えませんでした', 'err.close': '（タップで閉じます）'
   },
   en: {
     'sep': ' ',
-    'badge.mode': 'Mode: ', 'badge.reason': 'Why: ',
-    'mode.pending': 'Checking…', 'mode.ar': 'AR (real AR)', 'mode.cam': 'Camera + gyro (not AR)',
-    'mode.noGyro': 'Camera + drag (no gyro)', 'mode.stuck': 'AR (position not changing)',
-    'why.checking': 'Checking your device.',
-    'why.ios': 'iPhone / iPad do not support browser AR (WebXR).',
-    'why.notAndroid': 'This is not an Android device (e.g. a computer).',
-    'why.notChrome': 'This browser is not Chrome.',
-    'why.noXR': 'This browser has no AR feature (WebXR).',
-    'why.noARCore': 'This device does not support AR (ARCore).',
-    'why.checkErr': 'An error ({name}) occurred while checking AR support.',
-    'why.arOk': 'Android Chrome on an AR-capable device. Walk around to get closer to the posters.',
-    'why.camTail': 'Shown over the camera view; move your phone to look around.',
-    'why.arFailed': 'AR could not start, so we switched to camera + gyro.',
-    'why.noGyro': 'No gyro data is arriving on this device. Drag the screen to look around.',
-    'why.stuck': 'AR started, but the phone position has not changed for {sec} seconds. Use the stick at bottom left to move.',
+    'badge.mode': 'Mode: ', 'badge.reason': 'Status: ',
+    'mode.pending': 'Checking…', 'mode.ar': 'AR (Real AR)', 'mode.cam': 'Camera + Gyro',
+    'mode.noGyro': 'Camera + Drag', 'mode.stuck': 'AR (Stick enabled)',
+    'why.checking': 'Checking device',
+    'why.ios': 'Running in Camera + Gyro mode on iOS',
+    'why.notAndroid': 'Non-Android device mode',
+    'why.notChrome': 'Non-Chrome browser mode',
+    'why.noXR': 'WebXR unavailable',
+    'why.noARCore': 'ARCore unsupported',
+    'why.checkErr': 'Check error ({name})',
+    'why.arOk': 'Walk around to get closer to posters',
+    'why.camTail': 'Move your phone to look around',
+    'why.arFailed': 'Switched to camera mode',
+    'why.noGyro': 'Drag screen to look around',
+    'why.stuck': 'No movement for {sec}s. Use bottom-left stick',
     'short.ios': 'iPhone / iPad', 'short.notAndroid': 'Not Android', 'short.notChrome': 'Not Chrome',
     'short.noXR': 'No WebXR', 'short.noARCore': 'No ARCore', 'short.checkErr': 'Check error', 'short.ok': 'Android Chrome',
     'diag.checking': 'AR check: checking…',
     'diag.ok': 'AR check: ○ Supported ({short})',
-    'diag.ng': 'AR check: × AR unavailable ({short}) → runs in camera + gyro mode',
+    'diag.ng': 'AR check: × Camera + Gyro mode ({short})',
     'diag.build': 'Build: {b}',
-    'start.l1': 'Hold your phone and explore floating posters and Satsumasendai highlights',
-    'start.l2': 'You will be asked to allow "Camera" and "Motion sensors". Please choose "Allow".',
-    'start.l3': 'Watch out for people and objects around you. Please do not walk while looking at your phone!',
+    'start.spaceLabel': 'Select Space Size',
+    'space.wide': 'Wide Space', 'space.narrow': 'Narrow Space',
+    'start.objGuideTitle': '3D Landmarks Guide (Tap to toggle)',
+    'start.l1': 'Tap a poster to resize it or open its location in Google Maps',
+    'start.l2': 'Press the button near Fujimoto Falls to view a 15m Life-Size Waterfall!',
+    'start.l3': 'Watch your surroundings while walking with your phone!',
     'start.btn': 'Start', 'start.busy': 'Getting ready…', 'start.retry': 'Start again',
+    'top.recenter': 'Re-center',
     'menu.title': 'Menu', 'menu.lang': 'LANGUAGE / 言語', 'menu.theme': 'DISPLAY (DAY / NIGHT)', 'menu.day': 'Day', 'menu.night': 'Night',
+    'menu.space': 'SPACE SIZE',
     'menu.bgm': 'BGM (MUSIC)', 'menu.bgmOn': 'ON', 'menu.bgmOff': 'OFF', 'menu.move': 'MOVEMENT',
     'menu.backOff': '⇩ Backward: OFF', 'menu.backOn': '⇩ Backward: ON', 'menu.recenter': 'Re-center (face gallery here)',
     'menu.help': 'HOW TO PLAY',
-    'menu.helpBody': '• Move your phone to look around • Walk, or use the stick at bottom left, to move • Tap a poster or a 3D landmark for details • Switch the layout with the bottom buttons • If posters are hard to see, tap "Re-center"',
+    'menu.helpBody': '• Tap posters for details & use +/- buttons to zoom • Open Google Maps to see exact locations • Tap "View Life-Size Waterfall" near Fujimoto Falls for a 15m 3D waterfall • Tap "Re-center" at top right anytime',
     'layout.circle': 'Circle', 'layout.street': 'Street', 'layout.grid': 'Grid',
-    'step.unit': 'steps', 'card.close': 'Close', 'card.by': 'By ', 'card.spotTag': 'Satsumasendai Highlight',
-    'toast.recentered': 'Gallery re-centered to where you stand and face.',
-    'toast.arStart': 'AR started. Walk closer to the posters!',
-    'toast.camStart': 'Walk to move forward, or use the stick at bottom left. Tap a poster or landmark for details.',
+    'step.unit': 'steps', 'card.close': 'Close', 'card.spotPrefix': 'Spot: ', 'card.spotTag': 'Satsumasendai 3D Landmark',
+    'card.mapBtn': 'Open in Google Maps',
+    'card.waterfallBtn': 'View Life-Size Waterfall (~15m)',
+    'card.zoomIn': 'Zoom In', 'card.zoomOut': 'Zoom Out',
+    'waterfall.active': 'Life-Size Fujimoto Falls (~15m)',
+    'waterfall.close': 'Hide Waterfall',
+    'toast.recentered': 'Gallery re-centered in front of you',
+    'toast.arStart': 'AR started! Walk closer to the posters',
+    'toast.camStart': 'Tap any poster to resize or view on Google Maps',
     'toast.arEnded': 'AR ended',
-    'toast.sensorDenied': 'Motion sensors are not allowed. Drag the screen to look around (you can allow them in Settings → Safari).',
+    'toast.sensorDenied': 'Motion sensors denied. Drag screen to look around',
+    'toast.waterfallOn': 'A Life-Size Fujimoto Waterfall (~15m tall) appeared in front of you! Look up!',
+    'toast.waterfallOff': 'Life-size waterfall hidden',
+    'toast.spaceChanged': 'Space size updated and layout re-centered',
     'err.ar': 'AR could not start', 'err.arTimeout': 'AR did not start within 25 seconds',
     'err.cam': 'Could not use the camera', 'err.close': '(Tap to close)'
   }
@@ -646,15 +871,19 @@ const hour = new Date().getHours();
 const savedVol = parseFloat(store.get('vol'));
 const state = {
   lang: store.get('lang') || (/^ja/i.test(navigator.language || '') ? 'ja' : 'en'),
-  theme: store.get('theme') || ((hour >= 18 || hour < 6) ? 'night' : 'day'),   // 最初は時間帯で自動
+  theme: store.get('theme') || ((hour >= 18 || hour < 6) ? 'night' : 'day'),
+  space: store.get('space') || 'wide', // 'wide' or 'narrow'
   bgmOn: store.get('bgm') !== 'off',
   vol: isNaN(savedVol) ? BGM_VOLUME : clamp(savedVol, 0, 1),
   started: false, running: false, mode: 'pending', arActive: false, wantAR: false,
   layout: 'circle', backward: false, stickOn: false, stick: { x: 0, y: 0 },
   steps: 0, appearAt: null, recenterAt: 0, watch: null, card: null, menuOpen: false, arResolve: null,
+  selectedPosterIdx: null,
+  fullWaterfallOn: false,
   badge: { nameKey: 'mode.pending', reasonKeys: ['why.checking'], p: {} },
   startLabel: 'start.btn'
 };
+
 function t(key, p) {
   let s = (I18N[state.lang] && I18N[state.lang][key]);
   if (s == null) s = I18N.ja[key];
@@ -662,15 +891,24 @@ function t(key, p) {
   if (p) Object.keys(p).forEach((k) => { s = s.split('{' + k + '}').join(p[k]); });
   return s;
 }
-const pickP = (d, k) => (state.lang === 'en' && d[k + '_en']) ? d[k + '_en'] : d[k];   // ポスターの言語えらび
+const pickP = (d, k) => (state.lang === 'en' && d[k + '_en']) ? d[k + '_en'] : d[k];
 const pickS = (o) => o[state.lang] || o.ja;
+const getGoogleMapsUrl = (query) => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query || '薩摩川内市');
+
+/* ---------- 縦画面・横画面の自動検知 ---------- */
+function checkOrientation() {
+  const isLandscape = window.innerWidth > window.innerHeight;
+  document.body.classList.toggle('is-landscape', isLandscape);
+}
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', () => setTimeout(checkOrientation, 120));
+checkOrientation();
 
 /* ---------- 画面の部品 ---------- */
 const sceneEl = $('#scene'), rigEl = $('#rig'), camEl = $('#cam'), galleryEl = $('#gallery');
 const videoEl = $('#camVideo'), uiEl = $('#ui');
 
-/* ---------- 大きさなどの決まりごと ---------- */
-const POSTER_W = 0.9, POSTER_H = 1.27, POSTER_Y = 1.5;
+const POSTER_Y = 1.6;
 const EYE_HEIGHT = 1.4;
 const STUCK_EPSILON = 0.005;
 const STEP_MIN_INTERVAL = 380;
@@ -684,7 +922,6 @@ let camStream = null;
 
 /* ============================================================
    1. 端末の判定
-   ※ iPhone かどうかは「機種名（ユーザーエージェント）」で判定します。
    ============================================================ */
 const ua = navigator.userAgent || '';
 const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -706,7 +943,6 @@ async function checkAR() {
   }
 }
 
-// 左上のモード表示（言語を切りかえても作りなおせるよう、「言葉のキー」で持っておく）
 function setBadge(nameKey, reasonKeys, p) { state.badge = { nameKey: nameKey, reasonKeys: reasonKeys, p: p || {} }; renderBadge(); }
 function renderBadge() {
   const b = state.badge;
@@ -724,12 +960,12 @@ function applyArInfoToBadge(r) {
 }
 
 /* ============================================================
-   2. メッセージ（ひとこと・赤い帯）
+   2. メッセージ
    ============================================================ */
 let toastTimer = null;
 function showToast(msg, ms) {
   const el = $('#toast'); el.textContent = msg; el.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms || 5000);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms || 4500);
 }
 function showError(title, err) {
   let detail = '';
@@ -739,10 +975,10 @@ function showError(title, err) {
   bar.textContent = title + (detail ? '\n' + detail : '') + '\n' + t('err.close');
   bar.classList.add('show');
 }
-$('#errBar').addEventListener('click', () => $('#errBar').classList.remove('show'));   // タップするまで消えない
+$('#errBar').addEventListener('click', () => $('#errBar').classList.remove('show'));
 
 /* ============================================================
-   3. ポスターの画像（なければ仮ポスターを自動で作る）
+   3. ポスターの画像（仮ポスター生成もスポット名に対応）
    ============================================================ */
 function loadImage(path) {
   return new Promise((res, rej) => {
@@ -781,47 +1017,48 @@ function wrapLines(g, text, maxW) {
   if (cur) lines.push(cur);
   return lines;
 }
-function makePlaceholderDataURL(i, title, author) {
+function makePlaceholderDataURL(i, title, spot) {
   const W = 800, H = 1131, c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
-  const hue = (i * 52 + 210) % 360;
+  const hue = (i * 52 + 200) % 360;
   const grad = g.createLinearGradient(0, 0, W, H);
-  grad.addColorStop(0, 'hsl(' + hue + ',78%,62%)');
-  grad.addColorStop(1, 'hsl(' + ((hue + 55) % 360) + ',82%,42%)');
+  grad.addColorStop(0, 'hsl(' + hue + ',78%,58%)');
+  grad.addColorStop(1, 'hsl(' + ((hue + 55) % 360) + ',82%,40%)');
   g.fillStyle = grad; g.fillRect(0, 0, W, H);
   g.globalAlpha = 0.18; g.fillStyle = '#fff';
   g.beginPath(); g.arc(W * 0.85, H * 0.12, 230, 0, Math.PI * 2); g.fill();
   g.beginPath(); g.arc(W * 0.1, H * 0.9, 300, 0, Math.PI * 2); g.fill();
   g.globalAlpha = 1;
   g.fillStyle = 'rgba(255,255,255,.92)'; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-  g.font = '900 150px "Noto Sans JP",sans-serif';
-  g.fillText(String(i + 1).padStart(2, '0'), 60, 210);
-  g.fillStyle = 'rgba(255,255,255,.93)'; roundRectPath(g, 50, 330, W - 100, 470, 36); g.fill();
+  g.font = '900 140px "Noto Sans JP",sans-serif';
+  g.fillText(String(i + 1).padStart(2, '0'), 60, 195);
+  g.fillStyle = 'rgba(255,255,255,.94)'; roundRectPath(g, 50, 310, W - 100, 480, 36); g.fill();
   g.fillStyle = '#1d2340'; g.textAlign = 'center';
-  let size = 96, lines = [];
-  for (; size >= 44; size -= 6) {
+  let size = 90, lines = [];
+  for (; size >= 42; size -= 6) {
     g.font = '900 ' + size + 'px "Noto Sans JP",sans-serif';
-    lines = wrapLines(g, title || '', W - 190);
+    lines = wrapLines(g, title || '', W - 180);
     if (lines.length * size * 1.3 <= 400) break;
   }
   const blockH = lines.length * size * 1.3;
-  lines.forEach((ln, k) => g.fillText(ln, W / 2, 330 + (470 - blockH) / 2 + size * 1.02 + k * size * 1.3));
-  g.fillStyle = '#fff'; g.font = '700 38px "Noto Sans JP",sans-serif';
-  g.fillText(t('card.by') + (author || ''), W / 2, 920);
-  g.globalAlpha = 0.8; g.font = '400 26px "Noto Sans JP",sans-serif';
-  g.fillText('(placeholder)', W / 2, 1040);
+  lines.forEach((ln, k) => g.fillText(ln, W / 2, 310 + (480 - blockH) / 2 + size * 1.02 + k * size * 1.3));
+  g.fillStyle = '#fff'; g.font = '700 34px "Noto Sans JP",sans-serif';
+  const spotLines = wrapLines(g, '📍 ' + (spot || ''), W - 120);
+  spotLines.slice(0, 2).forEach((ln, k) => g.fillText(ln, W / 2, 880 + k * 46));
+  g.globalAlpha = 0.85; g.font = '500 26px "Noto Sans JP",sans-serif';
+  g.fillText('Tap to Zoom / Google Maps', W / 2, 1045);
   return c.toDataURL('image/png');
 }
 async function loadPosterTexture(i, d) {
   if (d.image) {
     try {
-      const img = await withTimeout(loadImage(d.image), 8000);
+      const img = await withTimeout(loadImage(d.image), 6000);
       try { return { src: fitImageToDataURL(img), placeholder: false }; } catch (e) { return { src: d.image, placeholder: false }; }
-    } catch (e) { /* 画像が無い → 仮ポスターへ */ }
+    } catch (e) {}
   }
   await fontsReady();
-  return { src: makePlaceholderDataURL(i, pickP(d, 'title'), pickP(d, 'author')), placeholder: true };
+  return { src: makePlaceholderDataURL(i, pickP(d, 'title'), pickP(d, 'spot')), placeholder: true };
 }
 
 /* ============================================================
@@ -850,10 +1087,9 @@ function materialFor(style, color) {
 const mk = () => document.createElement('a-entity');
 
 /* ============================================================
-   5. 薩摩川内の見どころ3Dモデル（かんたんな形を組み合わせて作る）
-   どれも「およそ1メートル」で作って、あとで指定の大きさに自動で合わせます。
+   5. 薩摩川内の見どころ3Dモデル（藤本滝ミニチュアを追加）
    ============================================================ */
-const glowMats = [];                                  // 夜モードで光らせる材料の一覧
+const glowMats = [];
 function M(color, o) {
   const m = new THREE.MeshStandardMaterial(Object.assign({ color: color, roughness: 0.55, metalness: 0.05 }, o || {}));
   glowMats.push(m); return m;
@@ -862,7 +1098,19 @@ function Mesh(geo, mat, x, y, z) { const m = new THREE.Mesh(geo, mat); m.positio
 const GEO = THREE;
 
 const MODEL_BUILDERS = {
-  // 川内大綱引：大きな綱（むすび目の形）
+  // 藤本滝（ミニチュア）
+  waterfall() {
+    const g = new THREE.Group();
+    g.add(Mesh(new GEO.CylinderGeometry(0.58, 0.58, 0.06, 32), M('#22b8cf', { transparent: true, opacity: 0.85 }), 0, -0.4, 0));
+    g.add(Mesh(new GEO.BoxGeometry(0.75, 0.85, 0.35), M('#5c5346'), 0, 0.02, -0.15));
+    g.add(Mesh(new GEO.BoxGeometry(0.32, 0.86, 0.08), M('#a5f3fc', { transparent: true, opacity: 0.9 }), 0, 0.02, 0.04));
+    g.add(Mesh(new GEO.SphereGeometry(0.22, 12, 10), M('#40c057'), -0.32, 0.38, -0.1));
+    g.add(Mesh(new GEO.SphereGeometry(0.2, 12, 10), M('#51cf66'), 0.32, 0.35, -0.1));
+    for (let i = 0; i < 6; i++) {
+      g.add(Mesh(new GEO.SphereGeometry(0.08, 8, 8), M('#ffffff', { transparent: true, opacity: 0.75 }), (i - 2.5) * 0.08, -0.36, 0.14));
+    }
+    return g;
+  },
   tsunahiki() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.TorusKnotGeometry(0.42, 0.12, 90, 10, 2, 5), M('#d9b26f', { roughness: 0.9 })));
@@ -870,7 +1118,6 @@ const MODEL_BUILDERS = {
     ring.rotation.x = 1.2; g.add(ring);
     return g;
   },
-  // 甑島の鹿島断崖：六角形の岩の柱と海
   cliff() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.CylinderGeometry(0.62, 0.62, 0.05, 32), M('#3aa6d9', { transparent: true, opacity: 0.8 }), 0, -0.35, 0));
@@ -881,7 +1128,6 @@ const MODEL_BUILDERS = {
     g.add(Mesh(new GEO.ConeGeometry(0.1, 0.18, 8), M('#4caf6b'), 0, 0.72, 0.0));
     return g;
   },
-  // カノコユリ：6まいの花びら
   lily() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.CylinderGeometry(0.025, 0.03, 0.7, 8), M('#3f9b52'), 0, -0.05, 0));
@@ -899,7 +1145,6 @@ const MODEL_BUILDERS = {
     for (let k = 0; k < 3; k++) g.add(Mesh(new GEO.SphereGeometry(0.025, 8, 8), M('#ffd23f'), (k - 1) * 0.05, 0.4, 0.02));
     return g;
   },
-  // 長目の浜：砂の浜とラグーン（湖）
   lagoon() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.CylinderGeometry(0.72, 0.72, 0.03, 40), M('#2f7fd0', { transparent: true, opacity: 0.8 }), 0, -0.14, 0));
@@ -911,7 +1156,6 @@ const MODEL_BUILDERS = {
     });
     return g;
   },
-  // 川内川：くねくね流れる川
   river() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.BoxGeometry(1.5, 0.04, 0.75), M('#7cc47a'), 0, -0.07, 0));
@@ -921,7 +1165,6 @@ const MODEL_BUILDERS = {
     }
     return g;
   },
-  // 入来麓の武家屋敷：石垣・屋根・生け垣
   samurai() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.BoxGeometry(1.0, 0.16, 0.08), M('#9a9a9a'), 0, -0.3, 0.35));
@@ -932,7 +1175,6 @@ const MODEL_BUILDERS = {
     [-0.35, 0, 0.35].forEach((x) => g.add(Mesh(new GEO.SphereGeometry(0.1, 10, 8), M('#4caf5f'), x, -0.18, 0.3)));
     return g;
   },
-  // 温泉：石のおふろと湯けむり
   onsen() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.CylinderGeometry(0.5, 0.52, 0.18, 32), M('#8d8d92'), 0, -0.3, 0));
@@ -942,7 +1184,6 @@ const MODEL_BUILDERS = {
     });
     return g;
   },
-  // 九州新幹線
   shinkansen() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.BoxGeometry(1.2, 0.2, 0.22), M('#f4f6f8')));
@@ -954,7 +1195,6 @@ const MODEL_BUILDERS = {
     g.add(Mesh(new GEO.BoxGeometry(1.5, 0.03, 0.06), M('#8a8f99'), 0, -0.16, -0.07));
     return g;
   },
-  // せんだい宇宙館：わく星と月
   planet() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.SphereGeometry(0.32, 24, 18), M('#e8a65d')));
@@ -962,7 +1202,6 @@ const MODEL_BUILDERS = {
     g.add(Mesh(new GEO.SphereGeometry(0.09, 12, 10), M('#cfd6e6'), 0.5, 0.3, 0.2));
     return g;
   },
-  // 藺牟田池のベッコウトンボ
   dragonfly() {
     const g = new THREE.Group();
     const body = Mesh(new GEO.CylinderGeometry(0.025, 0.018, 0.6, 8), M('#7a4a1e')); body.rotation.z = Math.PI / 2; g.add(body);
@@ -973,7 +1212,6 @@ const MODEL_BUILDERS = {
     });
     return g;
   },
-  // 甑大橋：アーチの橋
   bridge() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.BoxGeometry(1.3, 0.04, 0.12), M('#e8e8ee'), 0, -0.25, 0));
@@ -987,7 +1225,6 @@ const MODEL_BUILDERS = {
     g.add(Mesh(new GEO.BoxGeometry(1.5, 0.03, 0.5), M('#3aa6d9', { transparent: true, opacity: 0.75 }), 0, -0.45, 0));
     return g;
   },
-  // 甑島へのフェリー
   ferry() {
     const g = new THREE.Group();
     g.add(Mesh(new GEO.BoxGeometry(1.0, 0.14, 0.28), M('#2a4d8f'), 0, -0.2, 0));
@@ -1002,34 +1239,210 @@ const MODEL_BUILDERS = {
 };
 
 /* ============================================================
-   6. ポスターと3Dオブジェクトを作る
+   5.5 実物大の藤本滝（高さ約15m・幅約10m）を空間に生成する機能
    ============================================================ */
-const units = [];      // ポスター
-const floaters = [];   // 空間にうかぶ3Dオブジェクト（かんたんな形 ＋ 薩摩川内の見どころ）
+const fullWaterfall = (function () {
+  const root = mk();
+  root.setAttribute('visible', 'false');
+  galleryEl.appendChild(root);
+
+  const grp = new THREE.Group();
+  const H = 15.0; // 実物大の高さ 15メートル
+  const W = 10.0; // 幅 10メートル
+
+  // 1. 滝壺（直径12m）
+  const basin = new THREE.Mesh(
+    new THREE.CylinderGeometry(6.2, 6.5, 0.25, 48),
+    new THREE.MeshStandardMaterial({ color: '#0ea5e9', transparent: true, opacity: 0.78, roughness: 0.2 })
+  );
+  basin.position.set(0, 0.1, 1.5);
+  grp.add(basin);
+
+  // 2. 背後の岩壁（高さ15.5m）
+  const cliffMat = new THREE.MeshStandardMaterial({ color: '#44403c', roughness: 0.92 });
+  for (let i = -3; i <= 3; i++) {
+    const rw = 2.2 + (Math.abs(i) % 2) * 0.6;
+    const rh = H + 0.5 - Math.abs(i) * 0.4;
+    const rock = new THREE.Mesh(new THREE.BoxGeometry(rw, rh, 2.4), cliffMat);
+    rock.position.set(i * 1.65, rh / 2, -1.2 - (Math.abs(i) % 2) * 0.35);
+    rock.rotation.y = (i * 0.08);
+    grp.add(rock);
+  }
+
+  // 3. 左右と頂上の緑の樹冠
+  const leafMat = new THREE.MeshStandardMaterial({ color: '#15803d', roughness: 0.8 });
+  const leafPositions = [
+    [-5.5, 14.5, -0.8, 2.6], [-3.2, 15.2, -0.9, 2.4], [3.2, 15.2, -0.9, 2.4], [5.5, 14.5, -0.8, 2.6],
+    [-6.0, 9.0, -0.5, 2.3], [6.0, 9.0, -0.5, 2.3], [-5.8, 4.0, 0.2, 2.2], [5.8, 4.0, 0.2, 2.2]
+  ];
+  leafPositions.forEach((lp) => {
+    const tree = new THREE.Mesh(new THREE.SphereGeometry(lp[3], 14, 12), leafMat);
+    tree.position.set(lp[0], lp[1], lp[2]);
+    grp.add(tree);
+  });
+
+  // 4. 流れ落ちる滝の水流（テクスチャをスクロールさせてリアルな流れを表現）
+  const wc = document.createElement('canvas');
+  wc.width = 256; wc.height = 512;
+  const wg = wc.getContext('2d');
+  const wGrad = wg.createLinearGradient(0, 0, 256, 0);
+  wGrad.addColorStop(0, 'rgba(186,230,253,0.4)');
+  wGrad.addColorStop(0.2, 'rgba(255,255,255,0.95)');
+  wGrad.addColorStop(0.5, 'rgba(125,211,252,0.9)');
+  wGrad.addColorStop(0.8, 'rgba(255,255,255,0.95)');
+  wGrad.addColorStop(1, 'rgba(186,230,253,0.4)');
+  wg.fillStyle = wGrad;
+  wg.fillRect(0, 0, 256, 512);
+  // 白い筋（水しぶき線）
+  wg.fillStyle = 'rgba(255,255,255,0.85)';
+  for (let k = 0; k < 90; k++) {
+    const sx = (k * 37) % 246;
+    const sy = (k * 73) % 460;
+    wg.fillRect(sx, sy, 3 + (k % 5), 25 + (k % 45));
+  }
+  const waterTex = new THREE.CanvasTexture(wc);
+  waterTex.wrapS = THREE.RepeatWrapping;
+  waterTex.wrapT = THREE.RepeatWrapping;
+  waterTex.repeat.set(2, 3);
+
+  const waterMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(4.4, H),
+    new THREE.MeshBasicMaterial({ map: waterTex, transparent: true, opacity: 0.92, side: THREE.DoubleSide })
+  );
+  waterMesh.position.set(0, H / 2, 0.15);
+  grp.add(waterMesh);
+
+  // 5. 滝壺で跳ねる水しぶきパーティクル
+  const sprayCount = 160;
+  const sprayPos = new Float32Array(sprayCount * 3);
+  const sprayVel = [];
+  for (let i = 0; i < sprayCount; i++) {
+    sprayPos[i * 3]     = (Math.random() - 0.5) * 5.2;
+    sprayPos[i * 3 + 1] = Math.random() * 2.5;
+    sprayPos[i * 3 + 2] = 0.2 + Math.random() * 2.2;
+    sprayVel.push({ vy: 1.5 + Math.random() * 2.8, phase: Math.random() * Math.PI * 2 });
+  }
+  const sprayGeo = new THREE.BufferGeometry();
+  sprayGeo.setAttribute('position', new THREE.BufferAttribute(sprayPos, 3));
+  const sprayMat = new THREE.PointsMaterial({ color: '#ffffff', size: 0.28, transparent: true, opacity: 0.85 });
+  const sprayPts = new THREE.Points(sprayGeo, sprayMat);
+  grp.add(sprayPts);
+
+  root.setObject3D('mesh', grp);
+
+  return {
+    show() {
+      // カメラの正面 9m 先に実物大の滝を配置
+      const h = getHeading().clone();
+      getCameraWorldPos(_p);
+      // galleryEl のローカル座標に変換して配置
+      const worldTarget = new THREE.Vector3(_p.x + h.x * 9.0, 0, _p.z + h.z * 9.0);
+      galleryEl.object3D.worldToLocal(worldTarget);
+      root.object3D.position.set(worldTarget.x, 0, worldTarget.z);
+      const localLook = new THREE.Vector3(_p.x, 0, _p.z);
+      galleryEl.object3D.worldToLocal(localLook);
+      root.object3D.rotation.set(0, Math.atan2(localLook.x - worldTarget.x, localLook.z - worldTarget.z), 0);
+
+      root.setAttribute('visible', 'true');
+      state.fullWaterfallOn = true;
+      $('#waterfallBanner').classList.add('show');
+      showToast(t('toast.waterfallOn'), 6500);
+    },
+    hide() {
+      root.setAttribute('visible', 'false');
+      state.fullWaterfallOn = false;
+      $('#waterfallBanner').classList.remove('show');
+      showToast(t('toast.waterfallOff'), 3000);
+    },
+    tick(dt, T) {
+      if (!state.fullWaterfallOn) return;
+      waterTex.offset.y += dt * 1.8; // 水が上から下へ高速で流れ落ちるアニメーション
+      const arr = sprayGeo.attributes.position.array;
+      for (let i = 0; i < sprayCount; i++) {
+        const v = sprayVel[i];
+        arr[i * 3 + 1] = ((T * v.vy + v.phase) % 2.6);
+      }
+      sprayGeo.attributes.position.needsUpdate = true;
+    }
+  };
+})();
+
+/* ============================================================
+   6. ポスターと3Dオブジェクトを作る（拡大縮小・藤本滝3Dボタン対応）
+   ============================================================ */
+const units = [];
+const floaters = [];
+
+// 藤本滝ポスターの横に浮かぶ3Dボタンのアイコンを生成
+function createWaterfallTriggerMesh() {
+  const g = new THREE.Group();
+  const badge = new THREE.Mesh(
+    new THREE.BoxGeometry(0.82, 0.24, 0.06),
+    new THREE.MeshStandardMaterial({ color: '#0284c7', emissive: '#0369a1', emissiveIntensity: 0.4, roughness: 0.3 })
+  );
+  g.add(badge);
+
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 150;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(0, 0, 512, 150);
+  ctx.strokeStyle = '#7dd3fc';
+  ctx.lineWidth = 10;
+  ctx.strokeRect(6, 6, 500, 138);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 40px "Noto Sans JP", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🌊 実物大の滝を見る', 256, 76);
+
+  const labelPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.8, 0.22),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) })
+  );
+  labelPlane.position.z = 0.032;
+  g.add(labelPlane);
+  return g;
+}
 
 function createPosterUnit(i, data) {
   const outer = mk(), bob = mk(), frame = mk(), plane = mk(), eyeHolder = mk(), eyeSpin = mk();
-  frame.setAttribute('geometry', { primitive: 'box', width: POSTER_W + 0.12, height: POSTER_H + 0.12, depth: 0.05 });
-  frame.setAttribute('material', { shader: 'standard', color: '#ffffff', roughness: 0.6, metalness: 0 });
-  plane.setAttribute('geometry', { primitive: 'plane', width: POSTER_W, height: POSTER_H });
-  plane.setAttribute('position', { x: 0, y: 0, z: 0.027 });
+  frame.setAttribute('geometry', { primitive: 'box', width: BASE_POSTER_W + 0.14, height: BASE_POSTER_H + 0.14, depth: 0.06 });
+  frame.setAttribute('material', { shader: 'standard', color: '#ffffff', roughness: 0.55, metalness: 0.05 });
+  plane.setAttribute('geometry', { primitive: 'plane', width: BASE_POSTER_W, height: BASE_POSTER_H });
+  plane.setAttribute('position', { x: 0, y: 0, z: 0.032 });
   plane.setAttribute('material', { shader: 'flat', color: '#e8ebf5' });
-  eyeHolder.setAttribute('position', { x: 0, y: POSTER_H / 2 + 0.6, z: 0 });
+
+  eyeHolder.setAttribute('position', { x: 0, y: BASE_POSTER_H / 2 + 0.45, z: 0 });
   const eyeColor = hslToHex((i * 52 + 210) % 360, 85, 62);
-  eyeSpin.setAttribute('geometry', geometryFor(EYECATCHES[i % EYECATCHES.length], 0.38));
+  eyeSpin.setAttribute('geometry', geometryFor(EYECATCHES[i % EYECATCHES.length], 0.36));
   eyeSpin.setAttribute('material', materialFor('glossy', eyeColor));
   eyeHolder.appendChild(eyeSpin);
-  bob.appendChild(frame); bob.appendChild(plane); bob.appendChild(eyeHolder);
+
+  bob.appendChild(frame);
+  bob.appendChild(plane);
+  bob.appendChild(eyeHolder);
+
+  // 藤本滝ポスターの場合、ポスターの右下に3Dの「実物大の滝を見る」ボタンを配置
+  let wfTrigger = null;
+  if (data.hasFullWaterfall) {
+    wfTrigger = mk();
+    wfTrigger.setAttribute('position', { x: 0, y: -BASE_POSTER_H / 2 - 0.24, z: 0.08 });
+    wfTrigger.setObject3D('mesh', createWaterfallTriggerMesh());
+    bob.appendChild(wfTrigger);
+  }
+
   outer.appendChild(bob);
   galleryEl.appendChild(outer);
 
   const u = {
     i: i, data: data, outer: outer, bob: bob, frame: frame, plane: plane, eyeSpin: eyeSpin, eyeColor: eyeColor,
-    cardSrc: '', placeholder: false, phase: i * 1.7, delay: 0.15 * i,
+    wfTrigger: wfTrigger,
+    userScale: 1.0, // 個別の拡大・縮小倍率（0.6 〜 2.2）
+    cardSrc: '', placeholder: false, phase: i * 1.7, delay: 0.12 * i,
     cur: { x: 0, y: POSTER_Y, z: 0, yaw: 0 }, tg: { x: 0, y: POSTER_Y, z: 0, yaw: 0 }
   };
   loadPosterTexture(i, data).then((res) => {
-    // ★ 画像のデータURLは、文字列ではなく「オブジェクト形式」で渡す（セミコロンで壊れないように）
     plane.setAttribute('material', { src: res.src, shader: 'flat' });
     u.cardSrc = res.src; u.placeholder = res.placeholder;
   });
@@ -1046,7 +1459,7 @@ function createBasicFloater(idx, f) {
   return {
     kind: 'basic', idx: idx, size: size, style: f.style, color: f.color || '#ffffff', outer: outer, inner: inner,
     spin: 0.18 + rnd() * 0.3, bobAmp: 0.08 + rnd() * 0.1, bobFreq: 0.5 + rnd() * 0.5, phase: rnd() * 6.28,
-    delay: 0.5 + 0.1 * idx, cur: { x: 0, y: 2, z: 0 }, tg: { x: 0, y: 2, z: 0 }
+    delay: 0.4 + 0.08 * idx, cur: { x: 0, y: 2, z: 0 }, tg: { x: 0, y: 2, z: 0 }
   };
 }
 
@@ -1057,9 +1470,9 @@ function createSpotFloater(idx, f) {
   const raw = build();
   raw.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(raw), sz = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
-  raw.position.sub(ctr);                                               // まん中に寄せる
+  raw.position.sub(ctr);
   const wrapper = new THREE.Group(); wrapper.add(raw);
-  wrapper.scale.setScalar(size / Math.max(sz.x, sz.y, sz.z, 0.001));   // 指定の大きさ（0.6〜1.4m）に合わせる
+  wrapper.scale.setScalar(size / Math.max(sz.x, sz.y, sz.z, 0.001));
   const outer = mk(), inner = mk();
   inner.setObject3D('model', wrapper);
   outer.appendChild(inner); galleryEl.appendChild(outer);
@@ -1067,666 +1480,10 @@ function createSpotFloater(idx, f) {
   return {
     kind: 'spot', idx: idx, model: f.model, size: size, outer: outer, inner: inner, wrapper: wrapper,
     spin: 0.2 + rnd() * 0.25, bobAmp: 0.07 + rnd() * 0.08, bobFreq: 0.5 + rnd() * 0.5, phase: rnd() * 6.28,
-    delay: 0.5 + 0.1 * idx, cur: { x: 0, y: 2, z: 0 }, tg: { x: 0, y: 2, z: 0 }
+    delay: 0.4 + 0.08 * idx, cur: { x: 0, y: 2, z: 0 }, tg: { x: 0, y: 2, z: 0 }
   };
 }
 
 /* ============================================================
-   7. 3つの展示レイアウト（自分が原点で、-Z＝まっすぐ前を向いている前提）
-   ============================================================ */
-function posterTargets(name) {
-  const n = POSTERS.length, out = [];
-  for (let i = 0; i < n; i++) {
-    if (name === 'circle') {
-      // サークル型：半径＝max(2.5, 枚数×0.45)×GAP
-      const R = Math.max(2.5, n * 0.45) * GAP, a = (i / n) * Math.PI * 2;
-      const x = R * Math.sin(a), z = -R * Math.cos(a);
-      out.push({ x: x, y: POSTER_Y, z: z, yaw: Math.atan2(-x, -z) });
-    } else if (name === 'street') {
-      // ストリート型：通路の半分の幅1.7m、前後の間隔2.2m
-      const half = 1.7 * GAP, pitch = 2.2 * GAP, side = (i % 2 === 0) ? -1 : 1, row = Math.floor(i / 2);
-      out.push({ x: side * half, y: POSTER_Y, z: -(row + 1) * pitch, yaw: side < 0 ? Math.PI / 2 - 0.2 : -Math.PI / 2 + 0.2 });
-    } else {
-      // グリッド型：3列、横2.0m、縦2.6m
-      const dx = 2.0 * GAP, dz = 2.6 * GAP, row = Math.floor(i / 3), col = i % 3;
-      const cnt = Math.min(3, n - row * 3);
-      out.push({ x: (col - (cnt - 1) / 2) * dx, y: POSTER_Y, z: -(row + 1) * dz, yaw: 0 });
-    }
-  }
-  return out;
-}
-
-// 3Dオブジェクトを、ポスターに重ならない場所へ置く（レイアウトごとに1回だけ計算）
-const floaterCache = {};
-function floaterTargets(name, pt) {
-  if (floaterCache[name]) return floaterCache[name];
-  const rng = mulberry32({ circle: 11, street: 23, grid: 37 }[name] || 5);
-  let minX = 0, maxX = 0, minZ = 0, maxZ = 0;
-  pt.forEach((p) => { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z); });
-  const margin = 3.6, placed = [], out = new Array(floaters.length);
-  const order = floaters.map((f, i) => i).sort((a, b) => floaters[b].size - floaters[a].size);
-  for (const idx of order) {
-    const r = floaters[idx].size / 2;
-    let pos = null;
-    for (let at = 0; at < 600 && !pos; at++) {
-      const sp = 1 + at / 150;                                   // 見つからなければ探す範囲を広げる
-      const x = minX - margin * sp + rng() * ((maxX - minX) + 2 * margin * sp);
-      const z = minZ - margin * sp + rng() * ((maxZ - minZ) + 2 * margin * sp);
-      const y = (r + 0.6) + rng() * (3.4 - (r + 0.6));
-      if (Math.hypot(x, z) < 1.7 + r) continue;                  // 自分のすぐそばには置かない
-      let ok = true;
-      for (const p of pt) { if (Math.hypot(x - p.x, z - p.z) < r + 1.0) { ok = false; break; } }   // ポスターと重ならない
-      if (!ok) continue;
-      if (name === 'street' && Math.abs(x) < 1.0 + r && z > minZ - 2) continue;                    // 通路はあけておく
-      for (const q of placed) { if (Math.hypot(x - q.x, y - q.y, z - q.z) < r + q.r + 0.35) { ok = false; break; } }
-      if (ok) pos = { x: x, y: y, z: z };
-    }
-    if (!pos) {
-      const a = idx * 2.4, far = Math.max(Math.abs(minX), Math.abs(maxX), Math.abs(minZ), Math.abs(maxZ)) + 4 + r;
-      pos = { x: Math.sin(a) * far, y: 1.5 + r, z: -Math.cos(a) * far };
-    }
-    placed.push({ x: pos.x, y: pos.y, z: pos.z, r: r });
-    out[idx] = pos;
-  }
-  floaterCache[name] = out;
-  return out;
-}
-
-function applyLayout(name, instant) {
-  state.layout = name;
-  const pt = posterTargets(name), ft = floaterTargets(name, pt);
-  units.forEach((u, i) => { u.tg = pt[i]; if (instant) u.cur = { x: pt[i].x, y: pt[i].y, z: pt[i].z, yaw: pt[i].yaw }; });
-  floaters.forEach((f, i) => { f.tg = ft[i]; if (instant) f.cur = { x: ft[i].x, y: ft[i].y, z: ft[i].z }; });
-  $$('#layoutBar button').forEach((b) => b.classList.toggle('active', b.dataset.layout === name));
-}
-
-/* ============================================================
-   8. 昼モード・夜モード（あかり・光り方・きらきら粒）
-   ============================================================ */
-const SPARK_N = 180;
-const spark = (function () {
-  const pos = new Float32Array(SPARK_N * 3), rnd = mulberry32(777);
-  for (let i = 0; i < SPARK_N; i++) {                      // 自分のまわりの空間に、粒をばらまく
-    const a = rnd() * Math.PI * 2, r = 2.5 + rnd() * 8;
-    pos[i * 3] = Math.cos(a) * r; pos[i * 3 + 1] = 0.3 + rnd() * 5; pos[i * 3 + 2] = Math.sin(a) * r;
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const c = document.createElement('canvas'); c.width = c.height = 64;       // まるい光の絵
-  const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,.5)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-  const mat = new THREE.PointsMaterial({ size: 0.08, map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, sizeAttenuation: true });
-  const pts = new THREE.Points(geo, mat);
-  pts.frustumCulled = false;
-  sceneEl.object3D.add(pts);
-  return { pts: pts, mat: mat, geo: geo };
-})();
-
-function applyTheme(name, save) {
-  state.theme = name;
-  if (save) store.set('theme', name);
-  document.body.setAttribute('data-theme', name);
-  const night = name === 'night';
-  $('#lightAmbient').setAttribute('light', { type: 'ambient', color: night ? '#8fa4ff' : '#ffffff', intensity: night ? 0.5 : 0.95 });
-  $('#lightSun').setAttribute('light', { type: 'directional', color: night ? '#9db4ff' : '#fff4e0', intensity: night ? 0.6 : 0.95 });
-  // 夜モード：つやのある物体を、ほんのり内側から光らせる
-  floaters.forEach((f) => {
-    if (f.kind === 'basic' && f.style !== 'wire') {
-      f.inner.setAttribute('material', 'emissive', night ? f.color : '#000000');
-      f.inner.setAttribute('material', 'emissiveIntensity', night ? 0.5 : 0);
-    }
-  });
-  units.forEach((u) => {
-    u.eyeSpin.setAttribute('material', 'emissive', night ? u.eyeColor : '#000000');
-    u.eyeSpin.setAttribute('material', 'emissiveIntensity', night ? 0.5 : 0);
-  });
-  glowMats.forEach((m) => { m.emissive.copy(night ? m.color : new THREE.Color(0x000000)); m.emissiveIntensity = night ? 0.4 : 0; });
-  // きらきらの粒：夜は星のように多く、昼はやさしい光の粒を少しだけ
-  spark.mat.color.set(night ? '#dfe8ff' : '#ffe9a8');
-  spark.mat.size = night ? 0.09 : 0.06;
-  spark.mat.blending = night ? THREE.AdditiveBlending : THREE.NormalBlending;
-  spark.mat.needsUpdate = true;
-  spark.geo.setDrawRange(0, night ? SPARK_N : 70);
-  $$('[data-theme-set]').forEach((b) => b.classList.toggle('on', b.dataset.themeSet === name));
-  if (bgm) bgm.setNight(night);                             // BGMの雰囲気も切りかえ
-}
-
-/* ============================================================
-   9. BGM（やさしい音楽を、ブラウザの中で自動で作って流します。音声ファイルは不要）
-   ============================================================ */
-const bgm = (function () {
-  let ctx = null, master, bus, timer = null, on = false, vol = 0.6, night = false, nextChord = 0, nextNote = 0, chordIdx = 0, mustSuspend = false;
-  const mf = (m) => 440 * Math.pow(2, (m - 69) / 12);                     // 音の番号 → 周波数
-  const MOODS = {
-    day:   { chords: [[48, 55, 59, 64], [45, 55, 60, 64], [53, 57, 60, 64], [43, 55, 59, 62]], scale: [72, 74, 76, 79, 81, 84], len: 8,  gap: [1.6, 3.4] },
-    night: { chords: [[45, 52, 60, 64], [41, 53, 57, 64], [48, 55, 60, 64], [43, 55, 59, 62]], scale: [69, 72, 74, 76, 79, 81], len: 10, gap: [2.6, 4.8] }
-  };
-  const mood = () => (night ? MOODS.night : MOODS.day);
-  function init() {
-    if (ctx) return true;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return false;
-    ctx = new AC();
-    master = ctx.createGain(); master.gain.value = 0;
-    const comp = ctx.createDynamicsCompressor();
-    bus = ctx.createGain();
-    const delay = ctx.createDelay(2); delay.delayTime.value = 0.47;      // やまびこ（エコー）で、ふんわりさせる
-    const fb = ctx.createGain(); fb.gain.value = 0.38;
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1700;
-    const wet = ctx.createGain(); wet.gain.value = 0.4;
-    bus.connect(master); bus.connect(delay); delay.connect(lp); lp.connect(fb); fb.connect(delay); lp.connect(wet); wet.connect(master);
-    master.connect(comp); comp.connect(ctx.destination);
-    return true;
-  }
-  function tone(freq, t0, dur, peak, type, attack, detune) {              // ゆっくり出て、ゆっくり消える音
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = type; o.frequency.value = freq; if (detune) o.detune.value = detune;
-    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(peak, t0 + attack); g.gain.linearRampToValueAtTime(0, t0 + dur);
-    o.connect(g); g.connect(bus); o.start(t0); o.stop(t0 + dur + 0.1);
-  }
-  function bell(freq, t0) {                                                // ポロンとやさしい鈴の音
-    const o = ctx.createOscillator(), g = ctx.createGain(), o2 = ctx.createOscillator(), g2 = ctx.createGain();
-    o.type = 'sine'; o.frequency.value = freq; o2.type = 'sine'; o2.frequency.value = freq * 2;
-    g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.085, t0 + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 3.6);
-    g2.gain.setValueAtTime(0.0001, t0); g2.gain.linearRampToValueAtTime(0.02, t0 + 0.03); g2.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.6);
-    o.connect(g); g.connect(bus); o2.connect(g2); g2.connect(bus);
-    o.start(t0); o.stop(t0 + 3.7); o2.start(t0); o2.stop(t0 + 1.7);
-  }
-  function schedule() {
-    if (!ctx || !on) return;
-    const now = ctx.currentTime, m = mood();
-    while (nextChord < now + 1.0) {
-      const ch = m.chords[chordIdx % m.chords.length];
-      ch.forEach((n) => { tone(mf(n), nextChord, m.len + 3, 0.04, 'sine', 2.6, 0); tone(mf(n), nextChord, m.len + 3, 0.025, 'triangle', 2.6, 5); });
-      nextChord += m.len; chordIdx++;
-    }
-    while (nextNote < now + 1.0) {
-      bell(mf(m.scale[Math.floor(Math.random() * m.scale.length)]), nextNote);
-      nextNote += m.gap[0] + Math.random() * (m.gap[1] - m.gap[0]);
-    }
-  }
-  return {
-    start() {
-      if (!init()) return;
-      if (ctx.resume) ctx.resume();
-      if (on) return; on = true; mustSuspend = false;
-      nextChord = ctx.currentTime + 0.1; nextNote = ctx.currentTime + 2.5;
-      master.gain.cancelScheduledValues(ctx.currentTime);
-      master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
-      master.gain.linearRampToValueAtTime(vol * 0.9, ctx.currentTime + 3);   // 3秒かけてフェードイン
-      schedule(); timer = setInterval(schedule, 250);
-    },
-    stop() {
-      if (!ctx || !on) return; on = false;
-      master.gain.cancelScheduledValues(ctx.currentTime);
-      master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
-      master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.8);
-      clearInterval(timer); timer = null;
-    },
-    setVolume(v) { vol = v; if (ctx && on) master.gain.setTargetAtTime(v * 0.9, ctx.currentTime, 0.1); },
-    setNight(n) { night = n; },
-    pause() { if (ctx && on && ctx.suspend) ctx.suspend(); },            // 画面を閉じたら止める
-    resume() { if (ctx && on && ctx.resume) ctx.resume(); },
-    isOn() { return on; }
-  };
-})();
-document.addEventListener('visibilitychange', () => { if (document.hidden) bgm.pause(); else bgm.resume(); });
-
-/* ============================================================
-   10. 毎フレームの動き（アニメーション・移動・向き）
-   ============================================================ */
-function easeOutBack(x) {
-  x = clamp(x, 0, 1);
-  const c1 = 1.70158, c3 = c1 + 1;
-  return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
-}
-const _zee = new THREE.Vector3(0, 0, 1), _euler = new THREE.Euler(), _q0 = new THREE.Quaternion();
-const _q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
-const _devQ = new THREE.Quaternion(), _curQ = new THREE.Quaternion();
-function gyroToQuaternion(out, alpha, beta, gamma, orient) {
-  _euler.set(beta, alpha, -gamma, 'YXZ');
-  out.setFromEuler(_euler); out.multiply(_q1); out.multiply(_q0.setFromAxisAngle(_zee, -orient));
-}
-function screenAngleRad() {
-  const a = (screen.orientation && typeof screen.orientation.angle === 'number') ? screen.orientation.angle : (window.orientation || 0);
-  return a * Math.PI / 180;
-}
-function getHeading() {                          // いま向いている方向（水平ぶんだけ）
-  const cam = camEl.getObject3D('camera');
-  if (!cam) return lastHeading;
-  cam.updateWorldMatrix(true, false);
-  cam.getWorldDirection(_v);
-  _v.y = 0;
-  if (_v.lengthSq() < 0.04) return lastHeading;
-  _v.normalize(); lastHeading.copy(_v);
-  return lastHeading;
-}
-function getCameraWorldPos(target) {
-  const cam = camEl.getObject3D('camera');
-  if (!cam) return target.set(rigEl.object3D.position.x, EYE_HEIGHT, rigEl.object3D.position.z);
-  cam.updateWorldMatrix(true, false);
-  return cam.getWorldPosition(target);
-}
-// 「再配置」：いま立っている場所と向いている方向を、ギャラリーの正面にする
-function recenter() {
-  const h = getHeading().clone();
-  getCameraWorldPos(_p);
-  galleryEl.object3D.position.set(_p.x, 0, _p.z);
-  galleryEl.object3D.rotation.set(0, Math.atan2(-h.x, -h.z), 0);
-}
-
-window.__galleryTick = function (timeMs, dtMs) {
-  if (!state.running) return;
-  const dt = Math.min(dtMs / 1000, 0.1), T = nowS();
-  const renderer = sceneEl.renderer;
-  const inXR = !!(renderer && renderer.xr && renderer.xr.isPresenting);
-
-  // (a) カメラの向き（AR以外）：ジャイロ、なければ指ドラッグ
-  if (!inXR && !state.arActive) {
-    if (gyro.has) {
-      gyroToQuaternion(_devQ, THREE.MathUtils.degToRad(gyro.alpha), THREE.MathUtils.degToRad(gyro.beta), THREE.MathUtils.degToRad(gyro.gamma), screenAngleRad());
-      _curQ.slerp(_devQ, 1 - Math.exp(-dt * 30));
-      camEl.object3D.quaternion.copy(_curQ);
-    } else {
-      _euler.set(look.pitch, look.yaw, 0, 'YXZ');
-      camEl.object3D.quaternion.setFromEuler(_euler);
-    }
-  }
-  // (b) 予約の再配置
-  if (state.recenterAt && T >= state.recenterAt) { state.recenterAt = 0; recenter(); }
-
-  // (c) 移動：スティック ＋ 歩数ぶん
-  const rp = rigEl.object3D.position;
-  const sm = Math.hypot(state.stick.x, state.stick.y);
-  if (state.stickOn && sm > 0) {
-    const f = getHeading(), spd = STICK_SPEED * Math.min(1, sm);
-    const fwd = state.stick.y / sm, rgt = state.stick.x / sm;
-    rp.x += (f.x * fwd + (-f.z) * rgt) * spd * dt;
-    rp.z += (f.z * fwd + (f.x) * rgt) * spd * dt;
-  }
-  if (pendingMove.lengthSq() > 1e-6) {
-    const k = 1 - Math.exp(-dt * 7);
-    rp.x += pendingMove.x * k; rp.z += pendingMove.z * k;
-    pendingMove.multiplyScalar(1 - k);
-  }
-
-  // (d) ポスター
-  const tt = state.appearAt == null ? -1 : T - state.appearAt;
-  const kk = 1 - Math.exp(-dt * 4);
-  for (const u of units) {
-    const c = u.cur, g = u.tg;
-    c.x += (g.x - c.x) * kk; c.y += (g.y - c.y) * kk; c.z += (g.z - c.z) * kk; c.yaw += wrapAngle(g.yaw - c.yaw) * kk;
-    u.outer.object3D.position.set(c.x, c.y, c.z);
-    u.outer.object3D.rotation.set(0, c.yaw, 0);
-    u.bob.object3D.position.y = Math.sin(T * 1.1 + u.phase) * 0.06;
-    u.bob.object3D.rotation.z = Math.sin(T * 0.8 + u.phase) * 0.012;
-    u.eyeSpin.object3D.rotation.y += dt * 1.0;
-    u.outer.object3D.scale.setScalar(Math.max(0.001, easeOutBack((tt - u.delay) / 1.2)));
-  }
-  // (e) 3Dオブジェクト
-  for (const f of floaters) {
-    const c = f.cur, g = f.tg;
-    c.x += (g.x - c.x) * kk; c.y += (g.y - c.y) * kk; c.z += (g.z - c.z) * kk;
-    f.outer.object3D.position.set(c.x, c.y, c.z);
-    f.inner.object3D.position.y = Math.sin(T * f.bobFreq + f.phase) * f.bobAmp;
-    f.inner.object3D.rotation.y += dt * f.spin;
-    if (f.kind === 'basic') f.inner.object3D.rotation.x += dt * f.spin * 0.4;
-    f.inner.object3D.scale.setScalar(Math.max(0.001, easeOutBack((tt - f.delay) / 1.5)));
-  }
-  // (f) きらきらの粒：自分のまわりについてくる
-  spark.pts.position.set(rp.x, 0, rp.z);
-  spark.pts.rotation.y += dt * 0.02;
-  spark.mat.opacity = (state.theme === 'night' ? 0.75 : 0.65) + 0.25 * Math.sin(T * 1.3);
-
-  // (g) AR中、スマホの位置が動かないかを見張る
-  const w = state.watch;
-  if (w && state.arActive) {
-    getCameraWorldPos(_p); _p.sub(rigEl.object3D.position);
-    if (!w.base) {
-      if (T - w.t0 > 1.0) { w.base = _p.clone(); w.t1 = T; }
-    } else {
-      w.max = Math.max(w.max, _p.distanceTo(w.base));
-      if (w.max > STUCK_EPSILON) state.watch = null;
-      else if (T - w.t1 >= STUCK_SECONDS) { state.watch = null; onStuck(); }
-    }
-  }
-};
-
-function onStuck() {
-  state.stickOn = true;
-  document.body.classList.add('stick-on');
-  setBadge('mode.stuck', ['why.stuck'], { sec: STUCK_SECONDS });
-  showToast(t('why.stuck', { sec: STUCK_SECONDS }), 8000);
-}
-
-/* ============================================================
-   11. センサー（ジャイロ・歩数）
-   ============================================================ */
-function requestSensorPermissions() {
-  const jobs = [];
-  if (isIOS) {                                   // iPhone は「ボタンを押した瞬間」に許可を聞く（機種名で判定）
-    try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') jobs.push(DeviceOrientationEvent.requestPermission().catch(() => 'error')); } catch (e) {}
-    try { if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') jobs.push(DeviceMotionEvent.requestPermission().catch(() => 'error')); } catch (e) {}
-  }
-  return Promise.all(jobs).then((r) => (r.indexOf('denied') >= 0 ? 'denied' : 'ok'));
-}
-let sensorsOn = false;
-function startSensors() {
-  if (sensorsOn) return; sensorsOn = true;
-  window.addEventListener('deviceorientation', (e) => {
-    if (e.alpha == null && e.beta == null) return;
-    gyro.alpha = e.alpha || 0; gyro.beta = e.beta || 0; gyro.gamma = e.gamma || 0;
-    if (!gyro.has) { gyro.has = true; _curQ.copy(_devQ); }
-  });
-  window.addEventListener('devicemotion', onMotion);
-}
-let gBase = 9.8, accSm = 0, lastStepMs = 0, stepArmed = true;
-function onMotion(e) {
-  const a = e.accelerationIncludingGravity;
-  if (!a || a.x == null) return;
-  const m = Math.hypot(a.x, a.y, a.z);
-  gBase += (m - gBase) * 0.05;
-  accSm += ((m - gBase) - accSm) * 0.35;
-  const now = performance.now();
-  if (stepArmed && accSm > STEP_THRESHOLD && now - lastStepMs > STEP_MIN_INTERVAL) { stepArmed = false; lastStepMs = now; doStep(); }
-  else if (!stepArmed && accSm < STEP_THRESHOLD * 0.35) stepArmed = true;
-}
-function doStep() {
-  if (!state.running || state.arActive) return;
-  const h = getHeading(), sign = state.backward ? -1 : 1;
-  pendingMove.x += h.x * STEP_LENGTH * sign;
-  pendingMove.z += h.z * STEP_LENGTH * sign;
-  state.steps++; $('#stepCount').textContent = state.steps;
-}
-
-/* ============================================================
-   12. AR（WebXR）の開始
-   ============================================================ */
-let xrPatched = false;
-function patchXR() {
-  if (xrPatched || !navigator.xr) return; xrPatched = true;
-  const orig = navigator.xr.requestSession.bind(navigator.xr);
-  // A-Frame の enterAR() は失敗しても何も言わず止まることがある → requestSession を包んで失敗を捕まえる
-  navigator.xr.requestSession = function (mode, init) {
-    init = init || {};
-    if (mode === 'immersive-ar') {
-      init.requiredFeatures = ['local'];
-      const opt = (init.optionalFeatures || []).filter((f) => f !== 'local-floor');
-      if (opt.indexOf('dom-overlay') < 0) opt.push('dom-overlay');
-      init.optionalFeatures = opt;
-      init.domOverlay = { root: uiEl };
-    }
-    return orig(mode, init).then((s) => s, (err) => { onARFailed(t('err.ar'), err); throw err; });
-  };
-}
-function onARFailed(title, err) {
-  showError(title, err);
-  if (state.arResolve) { const r = state.arResolve; state.arResolve = null; r(false); }
-}
-function tryEnterAR() {
-  return new Promise((resolve) => {
-    state.wantAR = true; patchXR();
-    const timer = setTimeout(() => onARFailed(t('err.arTimeout'), { name: 'Timeout', message: '' }), 25000);
-    state.arResolve = (v) => { clearTimeout(timer); resolve(v); };
-    try {
-      const p = sceneEl.enterAR();
-      if (p && typeof p.catch === 'function') p.catch((err) => onARFailed(t('err.ar'), err));
-    } catch (err) { onARFailed(t('err.ar'), err); }
-  });
-}
-sceneEl.addEventListener('enter-vr', () => {
-  if (state.wantAR && (sceneEl.is('ar-mode') || (sceneEl.renderer && sceneEl.renderer.xr.isPresenting))) onARStarted();
-});
-sceneEl.addEventListener('exit-vr', () => {
-  if (!state.arActive) return;
-  state.arActive = false; state.running = false; state.wantAR = false;
-  document.body.classList.remove('running', 'stick-on');
-  $('#start').classList.remove('hide');
-  state.started = false; state.startLabel = 'start.retry';
-  $('#startBtn').disabled = false; renderStartBtn();
-  showToast(t('toast.arEnded'));
-});
-function applyARHeight() {                       // AR開始後：カメラ位置を0に、リグの高さを1.4mに
-  camEl.setAttribute('position', '0 0 0');
-  camEl.object3D.position.set(0, 0, 0);
-  rigEl.object3D.position.y = EYE_HEIGHT;
-}
-function onARStarted() {
-  if (state.arActive) return;
-  state.arActive = true; state.mode = 'ar';
-  stopCamera(); videoEl.style.display = 'none';
-  camEl.object3D.quaternion.identity();
-  applyARHeight(); setTimeout(applyARHeight, 400); setTimeout(applyARHeight, 1500);
-  $('#start').classList.add('hide');
-  document.body.classList.add('running'); document.body.classList.remove('mode-camera');
-  state.stickOn = false; document.body.classList.remove('stick-on');
-  setBadge('mode.ar', ['why.arOk']);
-  state.running = true; state.appearAt = nowS();
-  state.recenterAt = nowS() + 0.8;               // 開始直後に1回、自動で再配置
-  state.watch = { t0: nowS(), base: null, max: 0, t1: 0 };
-  if (state.arResolve) { const r = state.arResolve; state.arResolve = null; r(true); }
-  showToast(t('toast.arStart'), 5000);
-}
-
-/* ============================================================
-   13. カメラ映像＋ジャイロのモード（iPhoneなど）
-   ============================================================ */
-function stopCamera() { if (camStream) { camStream.getTracks().forEach((tr) => tr.stop()); camStream = null; } }
-async function startCameraMode(permP, reasonKeys) {
-  state.mode = 'camera';
-  setBadge('mode.cam', reasonKeys, arInfo ? arInfo.p : {});
-  $('#start').classList.add('hide');
-  document.body.classList.add('running', 'mode-camera');
-
-  const perm = await permP;
-  if (perm === 'denied') showToast(t('toast.sensorDenied'), 8000);
-  startSensors();
-
-  try {
-    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
-    videoEl.srcObject = camStream; videoEl.style.display = 'block';
-    await videoEl.play().catch(() => {});
-  } catch (e) { showError(t('err.cam'), e); }
-
-  rigEl.object3D.position.y = EYE_HEIGHT;
-  camEl.object3D.position.set(0, 0, 0);
-  state.stickOn = true; document.body.classList.add('stick-on');
-  state.running = true; state.appearAt = nowS();
-  state.recenterAt = nowS() + 0.5;
-  showToast(t('toast.camStart'), 7000);
-
-  setTimeout(() => {                             // ジャイロが動いているか確認
-    if (!gyro.has) setBadge('mode.noGyro', ['why.noGyro']);
-  }, 2500);
-}
-
-/* ============================================================
-   14. タップ判定（自前のレイキャスト）／ドラッグで見回し
-   ============================================================ */
-const raycaster = new THREE.Raycaster();
-function handleTap(x, y) {
-  if (!state.running || state.card || state.menuOpen) return;
-  const ndc = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
-  const renderer = sceneEl.renderer;
-  const cam = (renderer && renderer.xr && renderer.xr.isPresenting) ? renderer.xr.getCamera() : sceneEl.camera;
-  if (!cam) return;
-  raycaster.setFromCamera(ndc, cam);
-  const meshes = [], map = new Map();
-  units.forEach((u) => [u.plane, u.frame].forEach((e) => { const m = e.getObject3D('mesh'); if (m) { meshes.push(m); map.set(m, { type: 'poster', ref: u }); } }));
-  floaters.forEach((f) => { if (f.kind === 'spot') f.wrapper.traverse((o) => { if (o.isMesh) { meshes.push(o); map.set(o, { type: 'spot', ref: f }); } }); });
-  const hits = raycaster.intersectObjects(meshes, false);
-  if (hits.length) { const h = map.get(hits[0].object); openCard(h.type, h.ref); }
-}
-(function setupTap() {
-  const layer = $('#tapLayer');
-  let down = null;
-  layer.addEventListener('pointerdown', (e) => { down = { id: e.pointerId, t: performance.now(), lx: e.clientX, ly: e.clientY, moved: 0 }; });
-  layer.addEventListener('pointermove', (e) => {
-    if (!down || e.pointerId !== down.id) return;
-    const dx = e.clientX - down.lx, dy = e.clientY - down.ly;
-    down.lx = e.clientX; down.ly = e.clientY; down.moved += Math.abs(dx) + Math.abs(dy);
-    if (!gyro.has && state.running && !state.arActive) {
-      look.yaw += dx * 0.006; look.pitch = clamp(look.pitch + dy * 0.006, -1.3, 1.3);
-    }
-  });
-  layer.addEventListener('pointerup', (e) => {
-    if (!down) return;
-    const d = down; down = null;
-    if (d.moved < 12 && performance.now() - d.t < 700) handleTap(e.clientX, e.clientY);
-  });
-  layer.addEventListener('pointercancel', () => { down = null; });
-})();
-
-/* ============================================================
-   15. カード（ポスターや見どころをタップしたとき）
-   ============================================================ */
-function renderCard() {
-  const c = state.card; if (!c) return;
-  const img = $('#cardImg');
-  if (c.type === 'poster') {
-    const u = c.ref, d = u.data;
-    $('#cardNo').textContent = 'No.' + String(u.i + 1).padStart(2, '0');
-    $('#cardTitle').textContent = pickP(d, 'title') || '';
-    $('#cardAuthor').textContent = t('card.by') + (pickP(d, 'author') || '');
-    $('#cardAuthor').style.display = 'block';
-    $('#cardDesc').textContent = pickP(d, 'description') || '';
-    if (u.cardSrc) { img.src = u.cardSrc; img.style.display = 'block'; } else img.style.display = 'none';
-  } else {
-    const s = pickS(LOCAL_SPOTS[c.ref.model]);
-    $('#cardNo').textContent = t('card.spotTag');
-    $('#cardTitle').textContent = s.name; $('#cardDesc').textContent = s.desc;
-    $('#cardAuthor').style.display = 'none'; img.style.display = 'none';
-  }
-}
-function openCard(type, ref) { state.card = { type: type, ref: ref }; renderCard(); $('#card').classList.add('show'); }
-function closeCard() { $('#card').classList.remove('show'); state.card = null; }
-$('#cardClose').addEventListener('click', closeCard);
-$('#card').addEventListener('click', (e) => { if (e.target === $('#card')) closeCard(); });
-
-/* ============================================================
-   16. 言語の切りかえ
-   ============================================================ */
-function renderStartBtn() { $('#startBtn').textContent = t(state.startLabel); }
-function renderBgmBtn() {
-  $('#bgmBtnText').textContent = t(state.bgmOn ? 'menu.bgmOn' : 'menu.bgmOff');
-  $('#bgmBtn').setAttribute('aria-pressed', String(state.bgmOn));
-}
-function renderBackBtn() { $('#backBtn').textContent = t(state.backward ? 'menu.backOn' : 'menu.backOff'); }
-function setLang(lang, save) {
-  state.lang = lang;
-  if (save) store.set('lang', lang);
-  document.documentElement.lang = lang;
-  document.title = lang === 'ja' ? 'WebARポスターギャラリー' : 'WebAR Poster Gallery';
-  $$('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
-  $$('[data-lang]').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
-  $('#startTitle').textContent = EXHIBITION_TITLE[lang] || EXHIBITION_TITLE.ja;
-  $('#startSub').textContent = EXHIBITION_SUB[lang] || EXHIBITION_SUB.ja;
-  renderBadge(); renderDiag(); renderStartBtn(); renderBgmBtn(); renderBackBtn(); renderCard();
-  units.forEach((u) => {                          // 仮ポスターは、言語に合わせて作りなおす
-    if (u.placeholder) fontsReady().then(() => {
-      const src = makePlaceholderDataURL(u.i, pickP(u.data, 'title'), pickP(u.data, 'author'));
-      u.plane.setAttribute('material', { src: src, shader: 'flat' }); u.cardSrc = src;
-    });
-  });
-}
-
-/* ============================================================
-   17. ボタン・メニュー・スティックの動き
-   ============================================================ */
-$$('#layoutBar button').forEach((b) => b.addEventListener('click', () => applyLayout(b.dataset.layout, false)));
-
-function openMenu() { state.menuOpen = true; $('#menu').classList.add('open'); }
-function closeMenu() { state.menuOpen = false; $('#menu').classList.remove('open'); }
-$('#menuBtn').addEventListener('click', () => (state.menuOpen ? closeMenu() : openMenu()));
-$('#menuClose').addEventListener('click', closeMenu);
-$('#menuBackdrop').addEventListener('click', closeMenu);
-
-document.addEventListener('click', (e) => {       // 言語・昼夜のボタン（スタート画面とメニューの両方）
-  const lb = e.target.closest('[data-lang]'); if (lb) { setLang(lb.dataset.lang, true); return; }
-  const tb = e.target.closest('[data-theme-set]'); if (tb) applyTheme(tb.dataset.themeSet, true);
-});
-$('#recenterBtn').addEventListener('click', () => { recenter(); closeMenu(); showToast(t('toast.recentered'), 2800); });
-$('#backBtn').addEventListener('click', () => {
-  state.backward = !state.backward;
-  $('#backBtn').setAttribute('aria-pressed', String(state.backward)); renderBackBtn();
-});
-$('#bgmBtn').addEventListener('click', () => {
-  state.bgmOn = !state.bgmOn; store.set('bgm', state.bgmOn ? 'on' : 'off');
-  if (state.bgmOn) bgm.start(); else bgm.stop();
-  renderBgmBtn();
-});
-$('#bgmVol').addEventListener('input', (e) => {
-  state.vol = clamp(Number(e.target.value) / 100, 0, 1); store.set('vol', String(state.vol)); bgm.setVolume(state.vol);
-});
-
-(function setupStick() {
-  const base = $('#stick'), knob = $('#stickKnob'), R = 42;
-  let id = null;
-  function set(e) {
-    const r = base.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    let dx = e.clientX - cx, dy = e.clientY - cy;
-    const d = Math.hypot(dx, dy);
-    if (d > R) { dx *= R / d; dy *= R / d; }
-    knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
-    let x = dx / R, y = -dy / R;
-    if (Math.hypot(x, y) < 0.1) { x = 0; y = 0; }
-    state.stick.x = x; state.stick.y = y;
-  }
-  base.addEventListener('pointerdown', (e) => { id = e.pointerId; base.setPointerCapture(id); set(e); e.preventDefault(); });
-  base.addEventListener('pointermove', (e) => { if (e.pointerId === id) set(e); });
-  const end = (e) => { if (e.pointerId === id) { id = null; state.stick.x = 0; state.stick.y = 0; knob.style.transform = 'translate(0,0)'; } };
-  base.addEventListener('pointerup', end); base.addEventListener('pointercancel', end);
-})();
-
-// AR中の「画面タップがARの操作として横取りされる」のを止める（UI部品すべて）
-uiEl.addEventListener('beforexrselect', (e) => e.preventDefault());
-$$('#ui .ui-part, #tapLayer').forEach((el) => el.addEventListener('beforexrselect', (e) => e.preventDefault()));
-
-/* ============================================================
-   18. スタートボタン
-   ============================================================ */
-$('#startBtn').addEventListener('click', async () => {
-  if (state.started) return;
-  state.started = true;
-  $('#startBtn').disabled = true; state.startLabel = 'start.busy'; renderStartBtn();
-
-  const permP = requestSensorPermissions();       // iPhone の許可は、ボタンを押した直後に聞く
-  if (state.bgmOn) bgm.start();                    // BGMも、ボタンを押した直後でないと鳴らせない
-
-  if (!arInfo) arInfo = await arPromise;
-  if (arInfo.ok) {
-    setBadge('mode.ar', [arInfo.why]);
-    const ok = await tryEnterAR();
-    if (ok) return;
-    await startCameraMode(permP, ['why.arFailed']);
-  } else {
-    await startCameraMode(permP, [arInfo.why, 'why.camTail']);
-  }
-});
-
-/* ============================================================
-   19. 起動
-   ============================================================ */
-const arPromise = checkAR().then((r) => { arInfo = r; applyArInfoToBadge(r); renderDiag(); return r; });
-
-POSTERS.forEach((p, i) => units.push(createPosterUnit(i, p)));
-FLOATERS.forEach((f) => floaters.push(createBasicFloater(floaters.length, f)));
-LOCAL_FLOATERS.forEach((f) => { const s = createSpotFloater(floaters.length, f); if (s) floaters.push(s); });
-applyLayout('circle', true);
-
-$('#bgmVol').value = String(Math.round(state.vol * 100));
-bgm.setVolume(state.vol);
-setLang(state.lang, false);
-applyTheme(state.theme, false);
-
-function afterSceneLoaded() {
-  try { sceneEl.renderer.setClearColor(0x000000, 0); } catch (e) {}   // 背景は透明（現実の映像を見せる）
-  applyTheme(state.theme, false);                                       // 読みこみ後にも、もう一度あかりを合わせる
-}
-if (sceneEl.hasLoaded) afterSceneLoaded(); else sceneEl.addEventListener('loaded', afterSceneLoaded);
-
-})();
-</script>
-</body>
-</html>
+   7. 展示レイアウト計算（広い空間 / 狭い空間に対応）
+   ================================
